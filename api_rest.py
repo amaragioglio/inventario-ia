@@ -12,6 +12,13 @@ from functools import wraps
 app = Flask(__name__)
 CORS(app)  # Permitir peticiones de cualquier origen
 
+# Registrar API de Google AI
+try:
+    from api_google_ai import registrar_api_ia
+    registrar_api_ia(app)
+except ImportError as e:
+    print(f"[AVISO] No se pudo cargar API de Google AI: {e}")
+
 # Configuración
 DATABASE = 'inventario.db'
 API_TOKEN = 'inventario_api_2025'  # En producción, usar variables de entorno
@@ -541,6 +548,21 @@ def docs():
             },
             'estadisticas': {
                 'GET /api/estadisticas': 'Obtener estadísticas generales'
+            },
+            'google_ai': {
+                'GET /api/ai/status': 'Estado de configuracion de IA',
+                'POST /api/ai/configurar': 'Configurar API key de Google AI',
+                'GET /api/ai/analisis/inventario': 'Analisis completo del inventario con IA',
+                'GET /api/ai/analisis/producto/{id}': 'Analisis de producto especifico',
+                'GET /api/ai/analisis/tendencias': 'Detectar tendencias en inventario',
+                'GET /api/ai/prediccion/demanda': 'Prediccion de demanda general',
+                'GET /api/ai/prediccion/producto/{id}': 'Prediccion de demanda por producto',
+                'GET /api/ai/recomendaciones/compra': 'Recomendaciones de compra',
+                'GET /api/ai/recomendaciones/precios': 'Optimizacion de precios',
+                'GET /api/ai/reportes/ejecutivo': 'Generar reporte ejecutivo',
+                'GET /api/ai/reportes/proveedor/{id}': 'Reporte de proveedor',
+                'POST /api/ai/consulta': 'Consulta libre a la IA',
+                'GET /api/ai/estadisticas': 'Estadisticas de uso de IA'
             },
             'utilidades': {
                 'GET /api/health': 'Verificar salud del API',

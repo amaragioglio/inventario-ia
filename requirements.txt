@@ -5,14 +5,25 @@ flask-cors==4.0.0
 # Peticiones HTTP
 requests==2.31.0
 
-# Gráficos
+# Graficos
 matplotlib==3.8.2
 
-# Importación/Exportación de datos
+# Importacion/Exportacion de datos
 openpyxl==3.1.2
 
-# Servidor de producción (opcional)
+# Servidor de produccion (opcional)
 waitress==2.1.2
 
 # Variables de entorno
 python-dotenv==1.0.0
+
+# ============================================
+# INTEGRACION CON GOOGLE AI (Gemini)
+# ============================================
+
+# SDK de Google Generative AI (Gemini)
+google-generativeai==0.8.3
+
+# Dependencias adicionales para Google AI
+google-auth==2.35.0
+google-api-core==2.21.0
