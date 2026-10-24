@@ -40,13 +40,12 @@ def crear_ejecutable():
     # Comando de PyInstaller
     comando = [
         "pyinstaller",
-        "--name=SistemaInventario",
+        "--name=Inventario",
         "--onedir",  # Crear directorio con todas las dependencias
         "--windowed",  # Sin ventana de consola
-        "--icon=NONE",  # Sin icono personalizado
-        "--add-data=database.py;.",
-        "--add-data=models.py;.",
-        "--add-data=notifications.py;.",
+        # Los módulos .py se detectan solos por sus imports.
+        f"--add-data=docs{os.pathsep}docs",
+        f"--add-data=.env.example{os.pathsep}.",
         "main.py"
     ]
 
@@ -57,10 +56,10 @@ def crear_ejecutable():
         print("✓ EJECUTABLE CREADO EXITOSAMENTE")
         print("="*60)
         print("\nUbicacion del ejecutable:")
-        print(f"  {os.path.abspath('dist/SistemaInventario/SistemaInventario.exe')}")
+        print(f"  {os.path.abspath('dist/Inventario/Inventario.exe')}")
         print("\nPara distribuir la aplicacion:")
-        print("  1. Copia toda la carpeta 'dist/SistemaInventario'")
-        print("  2. Ejecuta 'SistemaInventario.exe' en cualquier PC con Windows")
+        print("  1. Copia toda la carpeta 'dist/Inventario'")
+        print("  2. Ejecuta 'Inventario.exe' en cualquier PC con Windows")
         print("  3. No requiere Python instalado en el PC destino")
         print("\n¡Listo para usar!")
 
@@ -88,9 +87,9 @@ def limpiar_archivos():
                 shutil.rmtree('build')
                 print("✓ Carpeta 'build' eliminada")
 
-            if os.path.exists('SistemaInventario.spec'):
-                os.remove('SistemaInventario.spec')
-                print("✓ Archivo 'SistemaInventario.spec' eliminado")
+            if os.path.exists('Inventario.spec'):
+                os.remove('Inventario.spec')
+                print("✓ Archivo 'Inventario.spec' eliminado")
 
             print("\n✓ Limpieza completada")
         except Exception as e:
