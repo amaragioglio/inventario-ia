@@ -12,54 +12,75 @@ import os
 class ThemeManager:
     """Gestiona los temas de la aplicación"""
 
-    # TEMA CLARO (Light Mode)
+    # Paleta "libreta de bodega": neutros cálidos y un solo acento verde.
+    # Pensada para una PC en el mostrador, de día. Todo texto cumple 4.5:1.
+
     LIGHT = {
         'name': 'light',
-        'bg': '#F5F5F7',
+        'bg': '#F4F3EF',
         'panel': '#FFFFFF',
-        'text': '#1C1C1E',
-        'text_secondary': '#6E6E73',
-        'border': '#D1D1D6',
-        'shadow': '#E5E5EA',
-        'primary': '#0A84FF',
-        'success': '#30D158',
-        'warning': '#FFD60A',
-        'danger': '#FF3B30',
-        'info': '#5E5CE6',
+        'subtle': '#F8F7F4',
+        'text': '#1D1F1E',
+        'text_secondary': '#5E625F',
+        'text_disabled': '#A3A6A3',
+        'border': '#E4E2DB',
+        'border_strong': '#CFCCC3',
+        'shadow': '#E4E2DB',
+        'primary': '#1F6F54',
+        'primary_hover': '#185A44',
+        'primary_soft': '#E3EFEA',
+        'on_primary': '#FFFFFF',
+        'focus': '#1F6F54',
+        'success': '#237A4B',
+        'warning': '#B25E09',
+        'warning_text': '#9A5208',
+        'danger': '#B42318',
+        'danger_soft': '#FBE9E7',
+        'danger_soft_hover': '#F6D7D3',
+        'info': '#2D5F8B',
         'chart_bg': '#FFFFFF',
-        'hover': '#F0F0F2',
-        'accent': '#FF9F0A',
-        'card_bg': '#FAFAFA',
+        'hover': '#F1F0EB',
+        'accent': '#1F6F54',
+        'card_bg': '#FFFFFF',
         'input_bg': '#FFFFFF',
-        'tree_header': '#E5E5EA',
-        'tree_selected': '#D1E7FF',
+        'tree_header': '#F1F0EB',
+        'tree_selected': '#DCEBE4',
         'tree_odd_row': '#FFFFFF',
-        'tree_even_row': '#FBFBFD',
+        'tree_even_row': '#FAF9F6',
     }
 
-    # TEMA OSCURO (Dark Mode)
     DARK = {
         'name': 'dark',
-        'bg': '#1C1C1E',
-        'panel': '#2C2C2E',
-        'text': '#FFFFFF',
-        'text_secondary': '#98989D',
-        'border': '#38383A',
-        'shadow': '#000000',
-        'primary': '#0A84FF',
-        'success': '#30D158',
-        'warning': '#FFD60A',
-        'danger': '#FF453A',
-        'info': '#5E5CE6',
-        'chart_bg': '#2C2C2E',
-        'hover': '#3A3A3C',
-        'accent': '#FF9F0A',
-        'card_bg': '#38383A',
-        'input_bg': '#3A3A3C',
-        'tree_header': '#38383A',
-        'tree_selected': '#0A4D8C',
-        'tree_odd_row': '#2C2C2E',
-        'tree_even_row': '#3A3A3C',
+        'bg': '#151716',
+        'panel': '#1D201F',
+        'subtle': '#232726',
+        'text': '#ECEDEA',
+        'text_secondary': '#A3A8A5',
+        'text_disabled': '#6B706D',
+        'border': '#2C302E',
+        'border_strong': '#3D4240',
+        'shadow': '#0E0F0F',
+        'primary': '#4FB38D',
+        'primary_hover': '#64C29E',
+        'primary_soft': '#1E3A30',
+        'on_primary': '#0F1B16',
+        'focus': '#64C29E',
+        'success': '#5CC28B',
+        'warning': '#E8A34A',
+        'warning_text': '#E8A34A',
+        'danger': '#F2776B',
+        'danger_soft': '#3A2220',
+        'danger_soft_hover': '#4A2B28',
+        'info': '#7FB0E0',
+        'chart_bg': '#1D201F',
+        'hover': '#262A29',
+        'accent': '#4FB38D',
+        'card_bg': '#1D201F',
+        'input_bg': '#232726',
+        'tree_header': '#232726',
+        'tree_selected': '#24453A',
+        'tree_odd_row': '#1D201F',
+        'tree_even_row': '#202322',
     }
 
     def __init__(self, config_file='theme_config.json'):
@@ -235,17 +256,12 @@ class ThemeManager:
             plt.rcParams[key] = value
 
     def get_chart_colors(self):
-        """Retorna una lista de colores para gráficas"""
+        """Colores para gráficas: el acento y variaciones, más neutros cálidos."""
         if self.is_dark():
-            return [
-                '#0A84FF', '#30D158', '#FFD60A', '#FF453A', '#5E5CE6',
-                '#FF9F0A', '#FF375F', '#5AC8FA', '#AF52DE', '#64D2FF'
-            ]
-        else:
-            return [
-                '#0A84FF', '#30D158', '#FFD60A', '#FF3B30', '#5E5CE6',
-                '#FF9F0A', '#FF375F', '#5AC8FA', '#AF52DE', '#64D2FF'
-            ]
+            return ['#4FB38D', '#7FC7AA', '#2F7F62', '#B2DCCB', '#D3A867',
+                    '#8E948F', '#B8BDB9', '#5E6561', '#E2C79A', '#3D4240']
+        return ['#1F6F54', '#4F9A7E', '#86BFA8', '#B9DACB', '#B98A3E',
+                '#8E8A7E', '#B8B4A8', '#5E625F', '#D9C29A', '#D8D5CC']
 
 
 # Instancia global del gestor de temas

@@ -160,3 +160,31 @@ def test_config_segura_por_defecto(monkeypatch):
     assert config.API_HOST == "127.0.0.1"
     assert config.API_DEBUG is False
     assert len(config.API_TOKEN) >= 24
+
+
+# ---------- Configuración desde la app ----------
+
+def test_env_store_actualiza_sin_borrar_otras_claves(tmp_path):
+    import env_store
+    ruta = tmp_path / ".env"
+    ruta.write_text("# comentario\nAPI_TOKEN=abc\nAI_PROVIDER=local\n", encoding="utf-8")
+    env_store.guardar({"AI_PROVIDER": "openai", "AI_API_KEY": "sk-test"}, ruta)
+    valores = env_store.leer(ruta)
+    assert valores == {"API_TOKEN": "abc", "AI_PROVIDER": "openai", "AI_API_KEY": "sk-test"}
+    assert ruta.read_text(encoding="utf-8").startswith("# comentario")
+
+
+def test_base_nueva_tiene_columnas_de_fechas(db):
+    con = sqlite3.connect(db.db_name)
+    columnas = {c[1] for c in con.execute("PRAGMA table_info(productos)")}
+    assert {"fecha_ingreso", "fecha_vencimiento", "dias_vida_util"} <= columnas
+
+
+def test_botones_sin_emojis_y_con_rol():
+    from ui_kit import limpiar_texto, rol_por_texto
+    assert limpiar_texto("💾 Guardar") == "Guardar"
+    assert limpiar_texto("🗑️ Eliminar") == "Eliminar"
+    assert limpiar_texto("⟳ Actualizar") == "Actualizar"
+    assert rol_por_texto("Nuevo Producto") == "principal"
+    assert rol_por_texto("Eliminar") == "peligro"
+    assert rol_por_texto("Cancelar") == "secundario"

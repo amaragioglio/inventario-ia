@@ -168,6 +168,15 @@ def obtener_proveedor_ia(recargar=False):
     return _instancia
 
 
+def aplicar_configuracion(proveedor, api_key="", modelo="", base_url=""):
+    """Cambia la IA en caliente (desde la pantalla de Configuración)."""
+    config.AI_PROVIDER = (proveedor or "local").lower()
+    config.AI_API_KEY = api_key
+    config.AI_MODEL = modelo
+    config.AI_BASE_URL = base_url
+    return obtener_proveedor_ia(recargar=True)
+
+
 if __name__ == "__main__":
     ia = obtener_proveedor_ia()
     print(f"Proveedor: {ia.descripcion}")

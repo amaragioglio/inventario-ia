@@ -31,9 +31,12 @@ SISTEMA_IA = (
 class AIAssistant:
     """Analiza un producto y sugiere cuánto pedir y a quién."""
 
-    def __init__(self, db=None, ia=None):
+    def __init__(self, db=None, ia=None, usar_ia=True):
         self.db = db or Database()
-        self.ia = ia if ia is not None else obtener_proveedor_ia()
+        if not usar_ia:
+            self.ia = None
+        else:
+            self.ia = ia if ia is not None else obtener_proveedor_ia()
 
     def analizar_producto(self, producto_id):
         """

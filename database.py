@@ -102,6 +102,17 @@ class Database:
             )
         ''')
 
+        # Columnas añadidas en versiones posteriores. Se agregan al final para no
+        # cambiar el orden de las columnas existentes. Así una base nueva o vieja
+        # siempre queda al día, sin scripts de migración manuales.
+        cursor.execute("PRAGMA table_info(productos)")
+        columnas = {col[1] for col in cursor.fetchall()}
+        for nombre, tipo in (("fecha_ingreso", "TEXT"),
+                             ("fecha_vencimiento", "TEXT"),
+                             ("dias_vida_util", "INTEGER DEFAULT 0")):
+            if nombre not in columnas:
+                cursor.execute(f"ALTER TABLE productos ADD COLUMN {nombre} {tipo}")
+
         conn.commit()
         conn.close()
 

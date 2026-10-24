@@ -31,7 +31,7 @@ class NotificationManager:
         frame_principal.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
 
         # Título
-        titulo = tk.Label(frame_principal, text="⚠️ ALERTAS DE STOCK",
+        titulo = tk.Label(frame_principal, text="ALERTAS DE STOCK",
                          font=("Segoe UI", 16, "bold"), bg="#f8f9fa", fg="#dc3545")
         titulo.pack(pady=(0, 15))
 
