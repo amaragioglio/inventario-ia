@@ -230,33 +230,33 @@ class AIAssistant:
         stock_minimo = producto[8]
 
         if stock_actual == 0:
-            razonamientos.append("⚠️ El producto está AGOTADO. Se sugiere pedido urgente.")
+            razonamientos.append("El producto está AGOTADO. Se sugiere pedido urgente.")
         elif stock_actual <= stock_minimo * 0.5:
-            razonamientos.append(f"⚠️ Stock crítico: {stock_actual} unidades (muy por debajo del mínimo {stock_minimo}).")
+            razonamientos.append(f"Stock crítico: {stock_actual} unidades (muy por debajo del mínimo {stock_minimo}).")
         elif stock_actual <= stock_minimo:
-            razonamientos.append(f"📊 Stock bajo: {stock_actual} unidades (mínimo: {stock_minimo}).")
+            razonamientos.append(f"Stock bajo: {stock_actual} unidades (mínimo: {stock_minimo}).")
 
         if ventas_diarias == 0:
             razonamientos.append("Sin ventas en los últimos 30 días: pedido mínimo para cubrir el stock mínimo.")
-            razonamientos.append(f"✅ Cantidad sugerida: {cantidad_sugerida} unidades.")
+            razonamientos.append(f"Cantidad sugerida: {cantidad_sugerida} unidades.")
             return " ".join(razonamientos)
 
         # Análisis de ventas
         if ventas_diarias > 5:
-            razonamientos.append(f"🔥 Alta rotación: ~{ventas_diarias:.1f} unidades/día. Se recomienda stock adicional.")
+            razonamientos.append(f"Alta rotación: ~{ventas_diarias:.1f} unidades/día. Se recomienda stock adicional.")
         elif ventas_diarias > 2:
-            razonamientos.append(f"📈 Rotación media: ~{ventas_diarias:.1f} unidades/día.")
+            razonamientos.append(f"Rotación media: ~{ventas_diarias:.1f} unidades/día.")
         else:
-            razonamientos.append(f"📉 Baja rotación: ~{ventas_diarias:.1f} unidades/día. Pedido conservador.")
+            razonamientos.append(f"Baja rotación: ~{ventas_diarias:.1f} unidades/día. Pedido conservador.")
 
         # Análisis de tiempo
         if dias_para_agotar <= 3:
-            razonamientos.append(f"⏰ El stock se agotará en ~{dias_para_agotar:.1f} días si continúa la tendencia.")
+            razonamientos.append(f"El stock se agotará en ~{dias_para_agotar:.1f} días si continúa la tendencia.")
         elif dias_para_agotar <= 7:
-            razonamientos.append(f"⏱️ Tiempo estimado de agotamiento: ~{dias_para_agotar:.1f} días.")
+            razonamientos.append(f"Tiempo estimado de agotamiento: ~{dias_para_agotar:.1f} días.")
 
         # Recomendación final
-        razonamientos.append(f"✅ Cantidad óptima sugerida: {cantidad_sugerida} unidades.")
+        razonamientos.append(f"Cantidad óptima sugerida: {cantidad_sugerida} unidades.")
 
         return " ".join(razonamientos)
 
@@ -271,21 +271,21 @@ class AIAssistant:
 
 Espero que se encuentre bien. Me comunico con usted desde el sistema de inventario para solicitar una cotización y confirmar disponibilidad del siguiente producto:
 
-📦 PRODUCTO SOLICITADO:
+Producto solicitado:
 - Nombre: {producto[2]}
 - Código: {producto[1]}
 - Categoría: {producto[4]}
 - Cantidad: {cantidad} unidades
 
-📊 INFORMACIÓN ADICIONAL:
+Información adicional:
 - Stock actual: {producto[7]} unidades
 - Precio de compra anterior: ${producto[5]:.2f}/unidad
 
 Por favor, confirme:
-✓ Disponibilidad del producto
-✓ Precio actualizado
-✓ Tiempo estimado de entrega
-✓ Condiciones de pago
+- Disponibilidad del producto
+- Precio actualizado
+- Tiempo estimado de entrega
+- Condiciones de pago
 
 Agradecería una pronta respuesta debido a nuestro nivel actual de inventario.
 

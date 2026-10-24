@@ -2979,7 +2979,8 @@ class VentanaAnalisisIA:
         tk.Label(urgencia_frame, text=f"Urgencia {urgencia.lower()}",
                  font=Theme.FONT_SUBTITLE, bg=Theme.COLOR_PANEL,
                  fg=colores_urgencia.get(urgencia, Theme.COLOR_TEXT)).pack(anchor="w", padx=20, pady=(14, 0))
-        tk.Label(urgencia_frame, text=f"Motor de análisis: {self.analisis.get('motor', 'local')}",
+        tk.Label(urgencia_frame, text=("Calculado en esta PC (modo básico)" if self.analisis.get('motor', 'local') == 'local'
+                       else f"Analizado con {self.analisis['motor']}"),
                  font=Theme.FONT_SMALL, bg=Theme.COLOR_PANEL,
                  fg=Theme.COLOR_MUTED).pack(anchor="w", padx=20, pady=(0, 14))
 
