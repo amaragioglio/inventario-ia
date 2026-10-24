@@ -179,3 +179,12 @@ cython_debug/
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+# ---- Inventario ----
+# Tu base de datos tiene tus ventas y proveedores reales: nunca la subas.
+*.db
+*.db-journal
+# Preferencia de tema local
+theme_config.json
+# Exportaciones locales
+exportaciones/
+*.xlsx

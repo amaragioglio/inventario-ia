@@ -5,16 +5,20 @@ Permite integración con otros sistemas
 
 from flask import Flask, jsonify, request
 from flask_cors import CORS
+import hmac
 import sqlite3
 from datetime import datetime
 from functools import wraps
 
-app = Flask(__name__)
-CORS(app)  # Permitir peticiones de cualquier origen
+import config
 
-# Configuración
-DATABASE = 'inventario.db'
-API_TOKEN = 'inventario_api_2025'  # En producción, usar variables de entorno
+app = Flask(__name__)
+if config.CORS_ORIGINS:
+    CORS(app, origins=config.CORS_ORIGINS)
+
+DATABASE = config.DATABASE
+API_TOKEN = config.API_TOKEN
+RUTAS_PUBLICAS = {'/api/health', '/api/docs'}
 
 # ==================== UTILIDADES ====================
 
@@ -24,13 +28,26 @@ def get_db_connection():
     conn.row_factory = sqlite3.Row
     return conn
 
+def _token_valido(cabecera):
+    """Compara el token en tiempo constante para no filtrar información."""
+    return hmac.compare_digest(cabecera.encode(), f'Bearer {API_TOKEN}'.encode())
+
+
+@app.before_request
+def proteger_api():
+    """Todas las rutas requieren token salvo health y docs."""
+    if request.method == 'OPTIONS' or request.path in RUTAS_PUBLICAS:
+        return None
+    if not _token_valido(request.headers.get('Authorization', '')):
+        return jsonify({'success': False, 'error': 'No autorizado'}), 401
+    return None
+
+
 def require_token(f):
     """Decorador para requerir autenticación"""
     @wraps(f)
     def decorated(*args, **kwargs):
-        token = request.headers.get('Authorization')
-
-        if not token or token != f'Bearer {API_TOKEN}':
+        if not _token_valido(request.headers.get('Authorization', '')):
             return jsonify({'error': 'No autorizado'}), 401
 
         return f(*args, **kwargs)
@@ -100,7 +117,8 @@ def get_productos():
         return response_success(productos)
 
     except Exception as e:
-        return response_error(str(e), 500)
+        app.logger.exception(e)
+        return response_error('Error interno del servidor', 500)
 
 @app.route('/api/productos/<int:id>', methods=['GET'])
 def get_producto(id):
@@ -128,7 +146,8 @@ def get_producto(id):
             return response_error('Producto no encontrado', 404)
 
     except Exception as e:
-        return response_error(str(e), 500)
+        app.logger.exception(e)
+        return response_error('Error interno del servidor', 500)
 
 @app.route('/api/productos', methods=['POST'])
 @require_token
@@ -195,7 +214,8 @@ def create_producto():
         return response_success({'id': producto_id}, 'Producto creado', 201)
 
     except Exception as e:
-        return response_error(str(e), 500)
+        app.logger.exception(e)
+        return response_error('Error interno del servidor', 500)
 
 @app.route('/api/productos/<int:id>', methods=['PUT'])
 @require_token
@@ -245,7 +265,8 @@ def update_producto(id):
         return response_success({'id': id}, 'Producto actualizado')
 
     except Exception as e:
-        return response_error(str(e), 500)
+        app.logger.exception(e)
+        return response_error('Error interno del servidor', 500)
 
 @app.route('/api/productos/<int:id>', methods=['DELETE'])
 @require_token
@@ -269,7 +290,8 @@ def delete_producto(id):
         return response_success(None, 'Producto eliminado')
 
     except Exception as e:
-        return response_error(str(e), 500)
+        app.logger.exception(e)
+        return response_error('Error interno del servidor', 500)
 
 # ==================== ENDPOINTS - PROVEEDORES ====================
 
@@ -287,7 +309,8 @@ def get_proveedores():
         return response_success(proveedores)
 
     except Exception as e:
-        return response_error(str(e), 500)
+        app.logger.exception(e)
+        return response_error('Error interno del servidor', 500)
 
 @app.route('/api/proveedores', methods=['POST'])
 @require_token
@@ -320,7 +343,8 @@ def create_proveedor():
         return response_success({'id': proveedor_id}, 'Proveedor creado', 201)
 
     except Exception as e:
-        return response_error(str(e), 500)
+        app.logger.exception(e)
+        return response_error('Error interno del servidor', 500)
 
 # ==================== ENDPOINTS - MOVIMIENTOS ====================
 
@@ -375,7 +399,8 @@ def get_movimientos():
         return response_success(movimientos)
 
     except Exception as e:
-        return response_error(str(e), 500)
+        app.logger.exception(e)
+        return response_error('Error interno del servidor', 500)
 
 @app.route('/api/movimientos', methods=['POST'])
 @require_token
@@ -442,7 +467,8 @@ def create_movimiento():
         return response_success({'id': movimiento_id}, 'Movimiento registrado', 201)
 
     except Exception as e:
-        return response_error(str(e), 500)
+        app.logger.exception(e)
+        return response_error('Error interno del servidor', 500)
 
 # ==================== ENDPOINTS - ESTADÍSTICAS ====================
 
@@ -498,7 +524,8 @@ def get_estadisticas():
         })
 
     except Exception as e:
-        return response_error(str(e), 500)
+        app.logger.exception(e)
+        return response_error('Error interno del servidor', 500)
 
 # ==================== ENDPOINTS - SALUD ====================
 
@@ -521,7 +548,7 @@ def docs():
         'autenticacion': {
             'tipo': 'Bearer Token',
             'header': 'Authorization: Bearer <token>',
-            'nota': 'Solo se requiere para operaciones POST, PUT, DELETE'
+            'nota': 'Requerido en todos los endpoints excepto /api/health y /api/docs'
         },
         'endpoints': {
             'productos': {
@@ -551,16 +578,37 @@ def docs():
 
     return jsonify(documentacion)
 
+# ==================== ENDPOINTS DE N8N / PEDIDOS ====================
+
+from webhook_server import bp as webhooks_bp  # noqa: E402
+app.register_blueprint(webhooks_bp)
+
+
+@app.errorhandler(500)
+def error_interno(_e):
+    return response_error('Error interno del servidor', 500)
+
+
 # ==================== INICIAR SERVIDOR ====================
 
-if __name__ == '__main__':
-    print("="*60)
+def iniciar():
+    print("=" * 60)
     print("API REST - Sistema de Inventario")
-    print("="*60)
-    print(f"Servidor iniciando en: http://localhost:5000")
-    print(f"Documentacion: http://localhost:5000/api/docs")
-    print(f"Token de autenticacion: {API_TOKEN}")
-    print("="*60)
-    print()
+    print("=" * 60)
+    print(f"Servidor: http://{config.API_HOST}:{config.API_PORT}")
+    print(f"Documentacion: http://{config.API_HOST}:{config.API_PORT}/api/docs")
+    if config.API_TOKEN_GENERADO:
+        print("Token temporal (define API_TOKEN en .env para fijarlo):")
+        print(f"  {API_TOKEN}")
+    else:
+        print("Token: el definido en API_TOKEN de tu archivo .env")
+    print("=" * 60)
+    try:
+        from waitress import serve
+        serve(app, host=config.API_HOST, port=config.API_PORT)
+    except ImportError:
+        app.run(host=config.API_HOST, port=config.API_PORT, debug=config.API_DEBUG)
 
-    app.run(host='0.0.0.0', port=5000, debug=True)
+
+if __name__ == '__main__':
+    iniciar()

@@ -345,7 +345,7 @@ class InventarioApp:
         import os
         import subprocess
 
-        doc_path = os.path.join(os.getcwd(), "DOCUMENTACION_N8N.md")
+        doc_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "docs", "N8N.md")
 
         if os.path.exists(doc_path):
             try:
@@ -376,13 +376,14 @@ El sistema incluye un API REST para integración con otros sistemas.
 Características:
 • Endpoints CRUD para productos, proveedores y movimientos
 • Autenticación por token
-• Documentación Swagger integrada
+• Documentación en /api/docs
 • Soporte JSON
 
 Para activar el API:
 1. Ejecuta: python api_rest.py
-2. El servidor iniciará en: http://localhost:5000
-3. Documentación: http://localhost:5000/docs
+2. El servidor iniciará en: http://127.0.0.1:5000
+3. Documentación: http://127.0.0.1:5000/api/docs
+4. El token se configura en API_TOKEN dentro del archivo .env
 
 Endpoints principales:
 • GET /api/productos - Listar productos
@@ -391,7 +392,7 @@ Endpoints principales:
 • PUT /api/productos/{id} - Actualizar producto
 • DELETE /api/productos/{id} - Eliminar producto
 
-Ver documentación completa en DOCUMENTACION_API.md"""
+Ver documentación completa en docs/API.md"""
 
         messagebox.showinfo("API REST", mensaje)
 
@@ -2204,7 +2205,7 @@ Salidas: {salidas}
         import os
         import sys
 
-        guia_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "INTEGRACION_N8N.md")
+        guia_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "docs", "N8N_IA.md")
 
         if os.path.exists(guia_path):
             try:
@@ -2218,7 +2219,7 @@ Salidas: {salidas}
             except Exception as e:
                 messagebox.showerror("Error", f"No se pudo abrir la guía:\n{str(e)}")
         else:
-            messagebox.showerror("Error", "No se encontró el archivo INTEGRACION_N8N.md")
+            messagebox.showerror("Error", "No se encontró el archivo docs/N8N_IA.md")
 
     # ==================== ALERTAS ====================
     def mostrar_alertas(self):

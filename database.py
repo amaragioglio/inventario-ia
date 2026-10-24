@@ -3,7 +3,9 @@ import os
 from datetime import datetime
 
 class Database:
-    def __init__(self, db_name="inventario.db"):
+    def __init__(self, db_name=None):
+        if db_name is None:
+            from config import DATABASE as db_name
         self.db_name = db_name
         self.init_database()
 

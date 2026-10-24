@@ -7,7 +7,7 @@ import os
 
 def migrar_base_datos():
     """Añade los campos fecha_ingreso y fecha_vencimiento a la tabla productos"""
-    db_name = "inventario.db"
+    from config import DATABASE as db_name
 
     if not os.path.exists(db_name):
         print(f"Error: No se encontró la base de datos {db_name}")

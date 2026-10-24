@@ -57,7 +57,7 @@ Este sistema de inventario está diseñado para integrarse con **n8n** y usar **
            │
            ▼
 ┌─────────────────────┐
-│  webhook_server.py  │
+│    api_rest.py      │
 │   (API REST 5000)   │
 └──────────┬──────────┘
            │
@@ -81,10 +81,15 @@ pip install -r requirements.txt
 ### Paso 2: Iniciar Servidor de API
 
 ```bash
-python webhook_server.py
+python api_rest.py   # incluye los endpoints de n8n; requiere el token de .env
 ```
 
-El servidor estará disponible en: `http://localhost:5000`
+El servidor estará disponible en: `http://127.0.0.1:5000`
+
+> **Autenticación:** en cada nodo *HTTP Request* de n8n agrega la cabecera
+> `Authorization: Bearer TU_API_TOKEN` (el valor de `API_TOKEN` en tu `.env`).
+> Si n8n corre en otra computadora, pon `API_HOST=0.0.0.0` en `.env` y abre el
+> puerto solo en tu red local, nunca a internet.
 
 ### Paso 3: Configurar Webhook de n8n
 

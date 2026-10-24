@@ -1,28 +1,18 @@
 """
-Servidor de API REST para integración con n8n
-Expone endpoints para consultar productos, stock y crear pedidos automáticos
+Endpoints para integración con n8n (pedidos, alertas, stock bajo).
+
+Se registran dentro de la API principal (api_rest.py), que se encarga de la
+autenticación. Inicia todo con:  python api_rest.py
 """
 
-from flask import Flask, jsonify, request
-from flask_cors import CORS
+from flask import Blueprint, jsonify, request
 from models import Producto, Proveedor, PedidoAutomatico, Alerta
-import json
 
-app = Flask(__name__)
-CORS(app)  # Permitir peticiones desde n8n
+bp = Blueprint('webhooks', __name__)
 
 # ==================== ENDPOINTS DE CONSULTA ====================
 
-@app.route('/api/health', methods=['GET'])
-def health_check():
-    """Verificar que el servidor está funcionando"""
-    return jsonify({
-        'status': 'ok',
-        'message': 'Servidor de webhooks activo'
-    }), 200
-
-
-@app.route('/api/productos/stock-bajo', methods=['GET'])
+@bp.route('/api/productos/stock-bajo', methods=['GET'])
 def obtener_stock_bajo():
     """Obtiene productos con stock bajo para n8n"""
     try:
@@ -67,11 +57,11 @@ def obtener_stock_bajo():
     except Exception as e:
         return jsonify({
             'success': False,
-            'error': str(e)
+            'error': 'Error interno del servidor'
         }), 500
 
 
-@app.route('/api/pedidos/pendientes', methods=['GET'])
+@bp.route('/api/pedidos/pendientes', methods=['GET'])
 def obtener_pedidos_pendientes():
     """Obtiene pedidos pendientes para n8n"""
     try:
@@ -106,11 +96,11 @@ def obtener_pedidos_pendientes():
     except Exception as e:
         return jsonify({
             'success': False,
-            'error': str(e)
+            'error': 'Error interno del servidor'
         }), 500
 
 
-@app.route('/api/alertas', methods=['GET'])
+@bp.route('/api/alertas', methods=['GET'])
 def obtener_alertas():
     """Obtiene alertas no leídas para n8n"""
     try:
@@ -137,13 +127,13 @@ def obtener_alertas():
     except Exception as e:
         return jsonify({
             'success': False,
-            'error': str(e)
+            'error': 'Error interno del servidor'
         }), 500
 
 
 # ==================== ENDPOINTS DE ACCIÓN ====================
 
-@app.route('/api/pedidos/crear', methods=['POST'])
+@bp.route('/api/pedidos/crear', methods=['POST'])
 def crear_pedido():
     """Crea un pedido automático desde n8n"""
     try:
@@ -172,11 +162,11 @@ def crear_pedido():
     except Exception as e:
         return jsonify({
             'success': False,
-            'error': str(e)
+            'error': 'Error interno del servidor'
         }), 500
 
 
-@app.route('/api/pedidos/<int:pedido_id>/procesar', methods=['POST'])
+@bp.route('/api/pedidos/<int:pedido_id>/procesar', methods=['POST'])
 def procesar_pedido(pedido_id):
     """Marca un pedido como procesado desde n8n"""
     try:
@@ -191,11 +181,11 @@ def procesar_pedido(pedido_id):
     except Exception as e:
         return jsonify({
             'success': False,
-            'error': str(e)
+            'error': 'Error interno del servidor'
         }), 500
 
 
-@app.route('/api/pedidos/<int:pedido_id>/recibir', methods=['POST'])
+@bp.route('/api/pedidos/<int:pedido_id>/recibir', methods=['POST'])
 def recibir_pedido(pedido_id):
     """Marca un pedido como recibido y actualiza stock desde n8n"""
     try:
@@ -210,11 +200,11 @@ def recibir_pedido(pedido_id):
     except Exception as e:
         return jsonify({
             'success': False,
-            'error': str(e)
+            'error': 'Error interno del servidor'
         }), 500
 
 
-@app.route('/api/notificar/dueno', methods=['POST'])
+@bp.route('/api/notificar/dueno', methods=['POST'])
 def notificar_dueno():
     """Endpoint para que n8n notifique al dueño"""
     try:
@@ -233,13 +223,13 @@ def notificar_dueno():
     except Exception as e:
         return jsonify({
             'success': False,
-            'error': str(e)
+            'error': 'Error interno del servidor'
         }), 500
 
 
 # ==================== WEBHOOK PARA N8N ====================
 
-@app.route('/webhook/stock-bajo', methods=['POST'])
+@bp.route('/webhook/stock-bajo', methods=['POST'])
 def webhook_stock_bajo():
     """
     Webhook que n8n puede llamar cuando detecta stock bajo
@@ -282,25 +272,10 @@ def webhook_stock_bajo():
     except Exception as e:
         return jsonify({
             'success': False,
-            'error': str(e)
+            'error': 'Error interno del servidor'
         }), 500
 
 
 if __name__ == '__main__':
-    print("\n" + "="*60)
-    print("🚀 SERVIDOR DE WEBHOOKS PARA N8N")
-    print("="*60)
-    print("\n📡 Endpoints disponibles:")
-    print("  GET  /api/health                     - Health check")
-    print("  GET  /api/productos/stock-bajo       - Productos con stock bajo")
-    print("  GET  /api/pedidos/pendientes         - Pedidos pendientes")
-    print("  GET  /api/alertas                    - Alertas no leídas")
-    print("  POST /api/pedidos/crear              - Crear pedido")
-    print("  POST /api/pedidos/<id>/procesar      - Marcar procesado")
-    print("  POST /api/pedidos/<id>/recibir       - Marcar recibido")
-    print("  POST /api/notificar/dueno            - Notificar al dueño")
-    print("  POST /webhook/stock-bajo             - Webhook con IA")
-    print("\n🌐 Servidor escuchando en: http://localhost:5000")
-    print("="*60 + "\n")
-
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    print("Estos endpoints ahora viven dentro de la API principal.")
+    print("Ejecuta:  python api_rest.py")

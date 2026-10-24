@@ -13,7 +13,10 @@ import io
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 # Conectar a la base de datos
-conn = sqlite3.connect('inventario.db')
+from config import DATABASE
+from database import Database
+Database(DATABASE)  # crea las tablas si la base es nueva
+conn = sqlite3.connect(DATABASE)
 cursor = conn.cursor()
 
 print("🗑️  Limpiando datos existentes...")
