@@ -4,12 +4,12 @@ Expone endpoints para consultar productos, stock y crear pedidos automáticos
 """
 
 from flask import Flask, jsonify, request
-from flask_cors import CORS
 from models import Producto, Proveedor, PedidoAutomatico, Alerta
+from local_api_auth import register_api_auth
 import json
 
 app = Flask(__name__)
-CORS(app)  # Permitir peticiones desde n8n
+register_api_auth(app)
 
 # ==================== ENDPOINTS DE CONSULTA ====================
 
@@ -303,4 +303,4 @@ if __name__ == '__main__':
     print("\n🌐 Servidor escuchando en: http://localhost:5000")
     print("="*60 + "\n")
 
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='127.0.0.1', port=5000, debug=False)

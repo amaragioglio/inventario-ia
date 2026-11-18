@@ -67,7 +67,7 @@ Hemos transformado el sistema de inventario en una **plataforma de integración 
 - Filtros flexibles
 - Respuestas JSON estándar
 - Documentación interactiva
-- CORS habilitado
+- Escucha local y autenticación por token
 
 **Endpoints Implementados**:
 
@@ -238,7 +238,8 @@ El sistema reconoce automáticamente variaciones de nombres:
 
 **Autenticación**:
 ```
-Header: Authorization: Bearer inventario_api_2025
+Configura `API_TOKEN` en el entorno antes de iniciar la API.
+Header: Authorization: Bearer <tu-token>
 ```
 
 **Respuesta Estándar Exitosa**:
@@ -282,7 +283,7 @@ Header: Authorization: Bearer inventario_api_2025
 import requests
 
 url = "http://localhost:5000/api/productos"
-headers = {"Authorization": "Bearer inventario_api_2025"}
+headers = {"Authorization": "Bearer <tu-token>"}
 
 # Obtener productos de tu sistema
 productos_externos = tu_sistema.get_productos()
@@ -476,7 +477,7 @@ Errores:
 - [x] Endpoint estadísticas
 - [x] Autenticación por token
 - [x] Documentación interactiva
-- [x] CORS habilitado
+- [x] Autenticación para consultas y cambios del inventario
 - [x] Filtros y paginación
 - [x] Health check
 - [x] Respuestas estándar

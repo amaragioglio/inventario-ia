@@ -84,7 +84,7 @@ pip install -r requirements.txt
 python webhook_server.py
 ```
 
-El servidor estará disponible en: `http://localhost:5000`
+El servidor estará disponible en `http://localhost:5000`. Antes de iniciarlo, configura `API_TOKEN` con un token aleatorio de al menos 24 caracteres. Añade `Authorization: Bearer <tu-token>` a las solicitudes de n8n que consulten o modifiquen el inventario.
 
 ### Paso 3: Configurar Webhook de n8n
 

@@ -279,7 +279,7 @@ TOTAL:      ~$2,150
 Si quieres regenerar los datos con nuevos valores aleatorios:
 
 ```bash
-cd C:\Users\fabri\inventario
+cd .\inventario-ia
 python generar_datos_prueba.py
 ```
 

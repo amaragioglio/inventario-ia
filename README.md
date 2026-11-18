@@ -31,13 +31,14 @@ Para probar la aplicación con datos de ejemplo, usa una copia separada del proy
 
 Abre **Configuración** en la aplicación para registrar la URL del webhook de n8n, probar la conexión y activar las notificaciones. En n8n puedes configurar avisos por correo, WhatsApp o Telegram y usar un proveedor de IA para sugerir cantidades de reposición.
 
-Para probar el servidor de webhooks en el mismo equipo, ejecútalo desde PowerShell:
+Para probar el servidor de webhooks en el mismo equipo, genera un token y arranca el servidor desde PowerShell:
 
 ```powershell
+$env:API_TOKEN = .\.venv\Scripts\python.exe -c "import secrets; print(secrets.token_urlsafe(32))"
 .\.venv\Scripts\python.exe -m flask --app webhook_server run --host 127.0.0.1 --port 5000
 ```
 
-El servidor de desarrollo debe mantenerse en un entorno de confianza. Consulta la [guía de integración con n8n](INTEGRACION_N8N.md) para ver el flujo y los endpoints. Si activas un webhook, los datos incluidos en sus avisos se comparten con el servicio que configures.
+Configura el mismo token en la credencial de n8n que envía `Authorization: Bearer <token>` al servidor. La aplicación de escritorio funciona por separado. Mantén ambos servidores en un entorno de confianza. Consulta la [guía de integración con n8n](INTEGRACION_N8N.md) para ver el flujo y los endpoints. Si activas un webhook, los datos incluidos en sus avisos se comparten con el servicio que configures.
 
 ## Estructura
 

@@ -4,17 +4,15 @@ Permite integración con otros sistemas
 """
 
 from flask import Flask, jsonify, request
-from flask_cors import CORS
 import sqlite3
 from datetime import datetime
-from functools import wraps
+from local_api_auth import register_api_auth
 
 app = Flask(__name__)
-CORS(app)  # Permitir peticiones de cualquier origen
+register_api_auth(app)
 
 # Configuración
 DATABASE = 'inventario.db'
-API_TOKEN = 'inventario_api_2025'  # En producción, usar variables de entorno
 
 # ==================== UTILIDADES ====================
 
@@ -23,19 +21,6 @@ def get_db_connection():
     conn = sqlite3.connect(DATABASE)
     conn.row_factory = sqlite3.Row
     return conn
-
-def require_token(f):
-    """Decorador para requerir autenticación"""
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        token = request.headers.get('Authorization')
-
-        if not token or token != f'Bearer {API_TOKEN}':
-            return jsonify({'error': 'No autorizado'}), 401
-
-        return f(*args, **kwargs)
-
-    return decorated
 
 def response_success(data, message=None, status=200):
     """Respuesta exitosa estándar"""
@@ -131,7 +116,6 @@ def get_producto(id):
         return response_error(str(e), 500)
 
 @app.route('/api/productos', methods=['POST'])
-@require_token
 def create_producto():
     """
     POST /api/productos
@@ -198,7 +182,6 @@ def create_producto():
         return response_error(str(e), 500)
 
 @app.route('/api/productos/<int:id>', methods=['PUT'])
-@require_token
 def update_producto(id):
     """
     PUT /api/productos/{id}
@@ -248,7 +231,6 @@ def update_producto(id):
         return response_error(str(e), 500)
 
 @app.route('/api/productos/<int:id>', methods=['DELETE'])
-@require_token
 def delete_producto(id):
     """
     DELETE /api/productos/{id}
@@ -290,7 +272,6 @@ def get_proveedores():
         return response_error(str(e), 500)
 
 @app.route('/api/proveedores', methods=['POST'])
-@require_token
 def create_proveedor():
     """POST /api/proveedores - Crea un nuevo proveedor"""
     try:
@@ -378,7 +359,6 @@ def get_movimientos():
         return response_error(str(e), 500)
 
 @app.route('/api/movimientos', methods=['POST'])
-@require_token
 def create_movimiento():
     """
     POST /api/movimientos
@@ -559,8 +539,7 @@ if __name__ == '__main__':
     print("="*60)
     print(f"Servidor iniciando en: http://localhost:5000")
     print(f"Documentacion: http://localhost:5000/api/docs")
-    print(f"Token de autenticacion: {API_TOKEN}")
     print("="*60)
     print()
 
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='127.0.0.1', port=5000, debug=False)

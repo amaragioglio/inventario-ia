@@ -185,11 +185,11 @@ Servidor inicia en: `http://localhost:5000`
 
 ### Autenticación
 
-**Token por defecto**: `inventario_api_2025`
+Antes de iniciar la API, configura `API_TOKEN` en el entorno con un token aleatorio de al menos 24 caracteres. Configura la misma credencial en los clientes que consulten o modifiquen el inventario.
 
 En headers de la petición:
 ```
-Authorization: Bearer inventario_api_2025
+Authorization: Bearer <tu-token>
 ```
 
 **Nota**: Solo se requiere para POST, PUT, DELETE
@@ -229,7 +229,7 @@ Response:
 #### Crear Producto
 ```http
 POST /api/productos
-Authorization: Bearer inventario_api_2025
+Authorization: Bearer <tu-token>
 Content-Type: application/json
 
 Body:
@@ -256,7 +256,7 @@ Response:
 #### Actualizar Producto
 ```http
 PUT /api/productos/3
-Authorization: Bearer inventario_api_2025
+Authorization: Bearer <tu-token>
 Content-Type: application/json
 
 Body:
@@ -276,7 +276,7 @@ Response:
 #### Registrar Movimiento
 ```http
 POST /api/movimientos
-Authorization: Bearer inventario_api_2025
+Authorization: Bearer <tu-token>
 Content-Type: application/json
 
 Body:
@@ -319,7 +319,7 @@ Response:
 import requests
 
 url = "http://localhost:5000/api/productos"
-headers = {"Authorization": "Bearer inventario_api_2025"}
+headers = {"Authorization": "Bearer <tu-token>"}
 
 # Crear producto
 data = {
@@ -339,7 +339,7 @@ const axios = require('axios');
 
 const url = 'http://localhost:5000/api/productos';
 const headers = {
-  'Authorization': 'Bearer inventario_api_2025'
+  'Authorization': 'Bearer <tu-token>'
 };
 
 const data = {
@@ -357,7 +357,7 @@ axios.post(url, data, { headers })
 #### cURL
 ```bash
 curl -X POST http://localhost:5000/api/productos \
-  -H "Authorization: Bearer inventario_api_2025" \
+  -H "Authorization: Bearer <tu-token>" \
   -H "Content-Type: application/json" \
   -d '{
     "codigo": "PROD006",
