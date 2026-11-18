@@ -4,6 +4,7 @@ from datetime import datetime
 from models import Producto, Proveedor, Movimiento, Alerta, PedidoAutomatico
 from notifications import NotificationManager
 from ai_assistant import AIAssistant
+import ui_kit
 from theme_manager import ThemeManager
 from tareas_automaticas import iniciar_tareas_automaticas, detener_tareas_automaticas, obtener_tareas_automaticas
 from analizador_ia import AnalizadorIA
@@ -16,53 +17,68 @@ import matplotlib.pyplot as plt
 
 # ==================== THEME (Legacy - Para compatibilidad) ====================
 class Theme:
-    """Tema centralizado - Ahora dinámico con ThemeManager"""
-    # Fuentes
-    FONT_BASE = ("Segoe UI", 11)
-    FONT_TITLE = ("Segoe UI Semibold", 18)
-    FONT_SUBTITLE = ("Segoe UI Semibold", 14)
-    FONT_BUTTON = ("Segoe UI Semibold", 10)
+    """Tokens visuales. Los colores se cargan desde ThemeManager."""
+    # Una sola familia; escala 1.2 entre pasos.
+    FONT_SMALL = ("Segoe UI", 9)
     FONT_LABEL = ("Segoe UI", 10)
+    FONT_BASE = ("Segoe UI", 11)
+    FONT_NUM = ("Segoe UI", 11)
+    FONT_BUTTON = ("Segoe UI Semibold", 10)
+    FONT_SECTION = ("Segoe UI Semibold", 12)
+    FONT_SUBTITLE = ("Segoe UI Semibold", 14)
+    FONT_TITLE = ("Segoe UI Semibold", 16)
+    FONT_STAT = ("Segoe UI Semibold", 22)
 
-    # Colores (serán actualizados por ThemeManager)
-    COLOR_BG = "#F5F5F7"
+    COLOR_BG = "#F4F3EF"
     COLOR_PANEL = "#FFFFFF"
-    COLOR_TEXT = "#1C1C1E"
-    COLOR_MUTED = "#6E6E73"
-    COLOR_PRIMARY = "#0A84FF"
-    COLOR_SUCCESS = "#30D158"
-    COLOR_WARNING = "#FFD60A"
-    COLOR_DANGER = "#FF3B30"
-    COLOR_SECONDARY = "#5E5CE6"
+    COLOR_SUBTLE = "#F8F7F4"
+    COLOR_TEXT = "#1D1F1E"
+    COLOR_MUTED = "#5E625F"
+    COLOR_BORDER = "#E4E2DB"
+    COLOR_PRIMARY = "#1F6F54"
+    COLOR_PRIMARY_SOFT = "#E3EFEA"
+    COLOR_SUCCESS = "#237A4B"
+    COLOR_WARNING = "#B25E09"
+    COLOR_WARNING_TEXT = "#9A5208"
+    COLOR_DANGER = "#B42318"
+    COLOR_SECONDARY = "#2D5F8B"
 
-    # Estilos adicionales
-    PADDING = 20
-    SHADOW_COLOR = "#E5E5EA"
+    PADDING = 24
+    SHADOW_COLOR = "#E4E2DB"
 
     @staticmethod
     def update_from_theme_manager(tm):
         """Actualiza los colores desde el ThemeManager"""
-        Theme.COLOR_BG = tm.get_color('bg')
-        Theme.COLOR_PANEL = tm.get_color('panel')
-        Theme.COLOR_TEXT = tm.get_color('text')
-        Theme.COLOR_MUTED = tm.get_color('text_secondary')
-        Theme.COLOR_PRIMARY = tm.get_color('primary')
-        Theme.COLOR_SUCCESS = tm.get_color('success')
-        Theme.COLOR_WARNING = tm.get_color('warning')
-        Theme.COLOR_DANGER = tm.get_color('danger')
-        Theme.COLOR_SECONDARY = tm.get_color('info')
-        Theme.SHADOW_COLOR = tm.get_color('shadow')
+        g = tm.get_color
+        Theme.COLOR_BG = g('bg')
+        Theme.COLOR_PANEL = g('panel')
+        Theme.COLOR_SUBTLE = g('subtle')
+        Theme.COLOR_TEXT = g('text')
+        Theme.COLOR_MUTED = g('text_secondary')
+        Theme.COLOR_BORDER = g('border')
+        Theme.COLOR_PRIMARY = g('primary')
+        Theme.COLOR_PRIMARY_SOFT = g('primary_soft')
+        Theme.COLOR_SUCCESS = g('success')
+        Theme.COLOR_WARNING = g('warning')
+        Theme.COLOR_WARNING_TEXT = g('warning_text')
+        Theme.COLOR_DANGER = g('danger')
+        Theme.COLOR_SECONDARY = g('info')
+        Theme.SHADOW_COLOR = g('border')
+        ui_kit.actualizar(tm)
 
 
 class InventarioApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("Sistema de Inventario - Minimarket")
+        self.root.title("Inventario")
         self.root.geometry("1400x900")
 
         # Gestor de temas
         self.theme_manager = ThemeManager()
+        ui_kit.instalar(self.theme_manager)
         Theme.update_from_theme_manager(self.theme_manager)
+        # Los paneles con borde de 1px no cambian a negro al recibir foco
+        self.root.option_add("*Frame.highlightColor", Theme.COLOR_BORDER)
         self.theme_manager.register_callback(self.on_theme_changed)
 
         self.root.configure(bg=Theme.COLOR_BG)
@@ -113,34 +129,34 @@ class InventarioApp:
 
         # Submenú de Tema
         self.tema_var = tk.StringVar(value=self.theme_manager.mode)
-        menu_ver.add_radiobutton(label="🌞 Tema Claro", variable=self.tema_var,
+        menu_ver.add_radiobutton(label="Tema Claro", variable=self.tema_var,
                                 value="light", command=lambda: self.cambiar_tema("light"))
-        menu_ver.add_radiobutton(label="🌙 Tema Oscuro", variable=self.tema_var,
+        menu_ver.add_radiobutton(label="Tema Oscuro", variable=self.tema_var,
                                 value="dark", command=lambda: self.cambiar_tema("dark"))
-        menu_ver.add_radiobutton(label="⚡ Auto (Sistema)", variable=self.tema_var,
+        menu_ver.add_radiobutton(label="Auto (Sistema)", variable=self.tema_var,
                                 value="auto", command=lambda: self.cambiar_tema("auto"))
 
         menu_ver.add_separator()
-        menu_ver.add_command(label="🔄 Actualizar Dashboard", command=self.cargar_dashboard)
+        menu_ver.add_command(label="Actualizar Dashboard", command=self.cargar_dashboard)
 
         # Menú Integración
         menu_integracion = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label="Integración", menu=menu_integracion)
-        menu_integracion.add_command(label="📥 Importar Datos", command=self.abrir_ventana_integracion)
-        menu_integracion.add_command(label="📤 Exportar Datos", command=self.abrir_ventana_integracion)
+        menu_integracion.add_command(label="Importar Datos", command=self.abrir_ventana_integracion)
+        menu_integracion.add_command(label="Exportar Datos", command=self.abrir_ventana_integracion)
         menu_integracion.add_separator()
-        menu_integracion.add_command(label="🔗 API REST", command=self.abrir_info_api)
+        menu_integracion.add_command(label="API REST", command=self.abrir_info_api)
 
         # Menú Configuración
         menu_config = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label="Configuración", menu=menu_config)
-        menu_config.add_command(label="⚙️ Configurar n8n", command=self.abrir_configuracion_n8n)
-        menu_config.add_command(label="📊 Ejecutar Análisis Completo", command=self.ejecutar_analisis_manual)
+        menu_config.add_command(label="Configurar n8n", command=self.abrir_configuracion_n8n)
+        menu_config.add_command(label="Ejecutar Análisis Completo", command=self.ejecutar_analisis_manual)
 
         # Menú Ayuda
         menu_ayuda = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label="Ayuda", menu=menu_ayuda)
-        menu_ayuda.add_command(label="📘 Documentación n8n", command=self.abrir_documentacion_n8n)
+        menu_ayuda.add_command(label="Documentación n8n", command=self.abrir_documentacion_n8n)
         menu_ayuda.add_command(label="Acerca de", command=self.mostrar_acerca_de)
 
     def cambiar_tema(self, modo):
@@ -169,11 +185,11 @@ class InventarioApp:
 
         # Mostrar mensaje
         modo_texto = {"light": "Claro", "dark": "Oscuro", "auto": "Automático"}
-        messagebox.showinfo("Tema", f"✅ Tema cambiado a: {modo_texto[self.theme_manager.mode]}")
+        messagebox.showinfo("Tema", f"Tema cambiado a: {modo_texto[self.theme_manager.mode]}")
 
     def mostrar_acerca_de(self):
         """Muestra información sobre la aplicación"""
-        tema = "🌙 Oscuro" if self.theme_manager.is_dark() else "🌞 Claro"
+        tema = "Oscuro" if self.theme_manager.is_dark() else "Claro"
         messagebox.showinfo("Acerca de",
                           f"Sistema de Inventario - Minimarket\n\n"
                           f"Versión 2.0\n"
@@ -202,7 +218,7 @@ class InventarioApp:
         frame_main.pack(fill=tk.BOTH, expand=True, padx=30, pady=30)
 
         # Título
-        tk.Label(frame_main, text="⚙️ Configuración de n8n",
+        tk.Label(frame_main, text="Configuración de n8n",
                 font=("Segoe UI", 16, "bold"),
                 bg=Theme.COLOR_BG,
                 fg=Theme.COLOR_TEXT).pack(pady=(0, 10))
@@ -262,11 +278,11 @@ class InventarioApp:
             """Prueba la conexión con n8n"""
             url = entry_url.get().strip()
             if not url:
-                label_estado.config(text="⚠️ Por favor ingresa una URL",
+                label_estado.config(text="Por favor ingresa una URL",
                                   fg=Theme.COLOR_WARNING)
                 return
 
-            label_estado.config(text="🔄 Probando conexión...",
+            label_estado.config(text="Probando conexión...",
                               fg=Theme.COLOR_TEXT)
             ventana.update()
 
@@ -277,13 +293,13 @@ class InventarioApp:
                 exito = webhook_temp.probar_conexion()
 
                 if exito:
-                    label_estado.config(text="✅ Conexión exitosa con n8n",
+                    label_estado.config(text="Conexión exitosa con n8n",
                                       fg=Theme.COLOR_SUCCESS)
                 else:
-                    label_estado.config(text="❌ No se pudo conectar. Verifica la URL",
+                    label_estado.config(text="No se pudo conectar. Verifica la URL",
                                       fg=Theme.COLOR_ERROR)
             except Exception as e:
-                label_estado.config(text=f"❌ Error: {str(e)}",
+                label_estado.config(text=f"Error: {str(e)}",
                                   fg=Theme.COLOR_ERROR)
 
         def guardar_configuracion():
@@ -302,17 +318,17 @@ class InventarioApp:
                 messagebox.showerror("Error", f"No se pudo guardar: {str(e)}")
 
         # Botones
-        btn_probar = self.crear_boton(frame_botones, "🔍 Probar Conexión",
+        btn_probar = self.crear_boton(frame_botones, "Probar Conexión",
                                       probar_conexion,
                                       Theme.COLOR_PRIMARY)
         btn_probar.pack(side=tk.LEFT, padx=(0, 10))
 
-        btn_guardar = self.crear_boton(frame_botones, "💾 Guardar",
+        btn_guardar = self.crear_boton(frame_botones, "Guardar",
                                        guardar_configuracion,
                                        Theme.COLOR_SUCCESS)
         btn_guardar.pack(side=tk.LEFT, padx=(0, 10))
 
-        btn_cancelar = self.crear_boton(frame_botones, "❌ Cancelar",
+        btn_cancelar = self.crear_boton(frame_botones, "Cancelar",
                                         ventana.destroy,
                                         Theme.COLOR_MUTED,
                                         Theme.COLOR_TEXT)
@@ -345,7 +361,7 @@ class InventarioApp:
         import os
         import subprocess
 
-        doc_path = os.path.join(os.getcwd(), "DOCUMENTACION_N8N.md")
+        doc_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "docs", "N8N.md")
 
         if os.path.exists(doc_path):
             try:
@@ -376,13 +392,14 @@ El sistema incluye un API REST para integración con otros sistemas.
 Características:
 • Endpoints CRUD para productos, proveedores y movimientos
 • Autenticación por token
-• Documentación Swagger integrada
+• Documentación en /api/docs
 • Soporte JSON
 
 Para activar el API:
 1. Ejecuta: python api_rest.py
-2. El servidor iniciará en: http://localhost:5000
-3. Documentación: http://localhost:5000/docs
+2. El servidor iniciará en: http://127.0.0.1:5000
+3. Documentación: http://127.0.0.1:5000/api/docs
+4. El token se configura en API_TOKEN dentro del archivo .env
 
 Endpoints principales:
 • GET /api/productos - Listar productos
@@ -391,120 +408,88 @@ Endpoints principales:
 • PUT /api/productos/{id} - Actualizar producto
 • DELETE /api/productos/{id} - Eliminar producto
 
-Ver documentación completa en DOCUMENTACION_API.md"""
+Ver documentación completa en docs/API.md"""
 
         messagebox.showinfo("API REST", mensaje)
 
     def configurar_estilos(self):
-        """Configura los estilos de la aplicación con tema Apple/macOS"""
+        """Estilos ttk: pestañas, tablas y barras de desplazamiento."""
         style = ttk.Style()
         style.theme_use('clam')
+        g = self.theme_manager.get_color
 
-        # Estilo para Notebook (pestañas) - Planas y minimalistas
-        style.configure('TNotebook',
-                       background=Theme.COLOR_BG,
-                       borderwidth=0,
-                       tabmargins=[0, 0, 0, 0])
-
-        style.configure('TNotebook.Tab',
-                       padding=[24, 14],
-                       font=Theme.FONT_BASE,
-                       borderwidth=0,
-                       relief='flat',
-                       focuscolor='none')
-
-        # Pestaña activa: texto azul con línea inferior
-        # Pestaña inactiva: texto gris
+        style.configure('TNotebook', background=Theme.COLOR_BG, borderwidth=1,
+                        tabmargins=[20, 10, 20, 0], bordercolor=Theme.COLOR_BORDER,
+                        lightcolor=Theme.COLOR_BG, darkcolor=Theme.COLOR_BG)
+        style.configure('TNotebook.Tab', padding=[16, 8], font=Theme.FONT_BASE,
+                        borderwidth=0, relief='flat', focuscolor=Theme.COLOR_BG,
+                        background=Theme.COLOR_BG, foreground=Theme.COLOR_MUTED,
+                        lightcolor=Theme.COLOR_BG, darkcolor=Theme.COLOR_BG,
+                        bordercolor=Theme.COLOR_BG)
         style.map('TNotebook.Tab',
-                 background=[('selected', Theme.COLOR_BG), ('!selected', Theme.COLOR_BG)],
-                 foreground=[('selected', Theme.COLOR_PRIMARY), ('!selected', Theme.COLOR_MUTED)],
-                 bordercolor=[('selected', Theme.COLOR_PRIMARY), ('!selected', Theme.COLOR_BG)])
+                  background=[('selected', Theme.COLOR_PANEL), ('active', g('hover'))],
+                  foreground=[('selected', Theme.COLOR_TEXT), ('active', Theme.COLOR_TEXT)],
+                  font=[('selected', ("Segoe UI Semibold", 11))],
+                  lightcolor=[('selected', Theme.COLOR_PANEL)],
+                  bordercolor=[('selected', Theme.COLOR_BORDER)])
 
-        # Estilo para Treeview (tablas) - Minimalista con filas alternadas
-        style.configure("Treeview",
-                       font=Theme.FONT_BASE,
-                       rowheight=36,
-                       background=Theme.COLOR_PANEL,
-                       fieldbackground=Theme.COLOR_PANEL,
-                       foreground=Theme.COLOR_TEXT,
-                       borderwidth=0)
-
-        # Encabezados de tabla con colores dinámicos
-        tree_header_color = self.theme_manager.get_color('tree_header')
-        style.configure("Treeview.Heading",
-                       font=Theme.FONT_LABEL,
-                       background=tree_header_color,
-                       foreground=Theme.COLOR_TEXT,
-                       borderwidth=0,
-                       relief='flat')
-
+        style.configure("Treeview", font=Theme.FONT_BASE, rowheight=32,
+                        background=Theme.COLOR_PANEL, fieldbackground=Theme.COLOR_PANEL,
+                        foreground=Theme.COLOR_TEXT, borderwidth=0,
+                        bordercolor=Theme.COLOR_BORDER, lightcolor=Theme.COLOR_PANEL,
+                        darkcolor=Theme.COLOR_PANEL)
+        style.configure("Treeview.Heading", font=("Segoe UI Semibold", 10),
+                        background=g('tree_header'), foreground=Theme.COLOR_MUTED,
+                        borderwidth=0, relief='flat', padding=[8, 6],
+                        lightcolor=g('tree_header'), darkcolor=g('tree_header'),
+                        bordercolor=Theme.COLOR_BORDER)
         style.map("Treeview.Heading",
-                 background=[('active', tree_header_color)],
-                 foreground=[('active', Theme.COLOR_TEXT)])
-
-        # Selección con colores dinámicos
-        tree_selected_color = self.theme_manager.get_color('tree_selected')
-        selected_text = '#FFFFFF' if self.theme_manager.is_dark() else Theme.COLOR_TEXT
+                  background=[('active', g('hover'))],
+                  foreground=[('active', Theme.COLOR_TEXT)])
         style.map('Treeview',
-                 background=[('selected', tree_selected_color)],
-                 foreground=[('selected', selected_text)])
+                  background=[('selected', g('tree_selected'))],
+                  foreground=[('selected', Theme.COLOR_TEXT)])
 
-        # Scrollbar minimalista
-        style.configure("Vertical.TScrollbar",
-                       background=Theme.COLOR_BG,
-                       troughcolor=Theme.COLOR_BG,
-                       borderwidth=0,
-                       arrowsize=12)
+        for orient in ("Vertical", "Horizontal"):
+            style.configure(f"{orient}.TScrollbar", background=g('border_strong'),
+                            troughcolor=Theme.COLOR_PANEL, borderwidth=0, arrowsize=0,
+                            lightcolor=g('border_strong'), darkcolor=g('border_strong'),
+                            bordercolor=Theme.COLOR_PANEL, gripcount=0)
+            style.map(f"{orient}.TScrollbar",
+                      background=[('active', Theme.COLOR_MUTED), ('!active', g('border_strong'))])
 
-        style.map("Vertical.TScrollbar",
-                 background=[('active', Theme.SHADOW_COLOR), ('!active', '#D1D1D6')])
+        style.configure('TCombobox', fieldbackground=g('input_bg'), background=g('input_bg'),
+                        foreground=Theme.COLOR_TEXT, bordercolor=g('border_strong'),
+                        arrowcolor=Theme.COLOR_MUTED, padding=4)
+        style.map('TCombobox',
+                  fieldbackground=[('readonly', g('input_bg'))],
+                  background=[('readonly', g('input_bg')), ('active', g('hover'))],
+                  foreground=[('readonly', Theme.COLOR_TEXT)],
+                  selectbackground=[('readonly', g('input_bg'))],
+                  selectforeground=[('readonly', Theme.COLOR_TEXT)])
+        self.root.option_add('*TCombobox*Listbox.background', g('panel'))
+        self.root.option_add('*TCombobox*Listbox.foreground', Theme.COLOR_TEXT)
+        self.root.option_add('*TCombobox*Listbox.selectBackground', g('tree_selected'))
+        self.root.option_add('*TCombobox*Listbox.selectForeground', Theme.COLOR_TEXT)
 
     def crear_interfaz(self):
         """Crea la interfaz principal"""
-        # Frame superior con título y alertas (estilo macOS)
-        frame_header = tk.Frame(self.root, bg=Theme.COLOR_PANEL, height=70)
+        frame_header = tk.Frame(self.root, bg=Theme.COLOR_PANEL, height=60)
         frame_header.pack(fill=tk.X)
         frame_header.pack_propagate(False)
+        tk.Frame(self.root, bg=Theme.COLOR_BORDER, height=1).pack(fill=tk.X)
 
-        # Agregar sombra visual (línea inferior)
-        separator = tk.Frame(self.root, bg=Theme.SHADOW_COLOR, height=1)
-        separator.pack(fill=tk.X)
+        tk.Label(frame_header, text="Inventario", font=Theme.FONT_TITLE,
+                 bg=Theme.COLOR_PANEL, fg=Theme.COLOR_TEXT).pack(side=tk.LEFT, padx=(24, 10))
 
-        # Título
-        label_titulo = tk.Label(frame_header, text="Sistema de Inventario",
-                               font=Theme.FONT_TITLE,
-                               bg=Theme.COLOR_PANEL,
-                               fg=Theme.COLOR_TEXT)
-        label_titulo.pack(side=tk.LEFT, padx=30, pady=20)
+        from ai_provider import obtener_proveedor_ia
+        tk.Label(frame_header, text=obtener_proveedor_ia().descripcion, font=Theme.FONT_SMALL,
+                 bg=Theme.COLOR_PANEL, fg=Theme.COLOR_MUTED).pack(side=tk.LEFT, pady=(4, 0))
 
-        # Botón de alertas (se actualizará dinámicamente)
-        self.btn_alertas = tk.Button(frame_header, text="🔔 Alertas (0)",
-                                     command=self.mostrar_alertas,
-                                     bg=Theme.COLOR_WARNING,
-                                     fg=Theme.COLOR_TEXT,
-                                     font=Theme.FONT_BUTTON,
-                                     relief=tk.FLAT,
-                                     padx=24,
-                                     pady=12,
-                                     cursor="hand2",
-                                     borderwidth=0,
-                                     highlightthickness=0)
-
-        # Efectos hover para botón de alertas
-        def on_enter_alertas(e):
-            self.btn_alertas['background'] = self._oscurecer_color(self.btn_alertas['bg'])
-
-        def on_leave_alertas(e):
-            # Restaurar color según estado
-            cantidad = self.alerta_model.contar_no_leidas()
-            if cantidad > 0:
-                self.btn_alertas['background'] = Theme.COLOR_DANGER
-            else:
-                self.btn_alertas['background'] = Theme.COLOR_WARNING
-
-        self.btn_alertas.bind("<Enter>", on_enter_alertas)
-        self.btn_alertas.bind("<Leave>", on_leave_alertas)
-        self.btn_alertas.pack(side=tk.RIGHT, padx=30, pady=20)
+        # Botón de alertas: neutro sin alertas, rojo suave cuando hay pendientes.
+        self.btn_alertas = tk.Button(frame_header, text="Sin alertas",
+                                     command=self.mostrar_alertas, rol="secundario")
+        self.btn_alertas.pack(side=tk.RIGHT, padx=24)
 
         # Frame principal con pestañas
         self.notebook = ttk.Notebook(self.root)
@@ -519,13 +504,13 @@ Ver documentación completa en DOCUMENTACION_API.md"""
         self.tab_reportes = tk.Frame(self.notebook, bg=Theme.COLOR_BG)
         self.tab_configuracion = tk.Frame(self.notebook, bg=Theme.COLOR_BG)
 
-        self.notebook.add(self.tab_dashboard, text="  Dashboard  ")
-        self.notebook.add(self.tab_productos, text="  Productos  ")
-        self.notebook.add(self.tab_proveedores, text="  Proveedores  ")
-        self.notebook.add(self.tab_pedidos, text="  Pedidos Auto  ")
-        self.notebook.add(self.tab_movimientos, text="  Movimientos  ")
-        self.notebook.add(self.tab_reportes, text="  Reportes  ")
-        self.notebook.add(self.tab_configuracion, text="  ⚙️ Configuración  ")
+        self.notebook.add(self.tab_dashboard, text="Resumen")
+        self.notebook.add(self.tab_productos, text="Productos")
+        self.notebook.add(self.tab_proveedores, text="Proveedores")
+        self.notebook.add(self.tab_pedidos, text="Pedidos")
+        self.notebook.add(self.tab_movimientos, text="Movimientos")
+        self.notebook.add(self.tab_reportes, text="Reportes")
+        self.notebook.add(self.tab_configuracion, text="Configuración")
 
         # Construir cada pestaña
         self.construir_dashboard()
@@ -552,65 +537,64 @@ Ver documentación completa en DOCUMENTACION_API.md"""
             lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
         )
 
-        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        ventana_id = canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
         canvas.configure(yscrollcommand=scrollbar.set)
+        # El contenido ocupa todo el ancho disponible
+        canvas.bind("<Configure>", lambda e: canvas.itemconfigure(ventana_id, width=e.width))
 
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
 
-        # Frame principal
         frame = tk.Frame(scrollable_frame, bg=Theme.COLOR_BG)
-        frame.pack(fill=tk.BOTH, expand=True, padx=30, pady=30)
+        frame.pack(fill=tk.BOTH, expand=True, padx=24, pady=24)
 
         # === TARJETAS KPI ===
         frame_stats = tk.Frame(frame, bg=Theme.COLOR_BG)
-        frame_stats.pack(fill=tk.X, pady=(0, 25))
+        frame_stats.pack(fill=tk.X, pady=(0, 16))
 
-        self.card_total_productos = self.crear_tarjeta_stat(frame_stats, "📦 Total Productos", "0", Theme.COLOR_PRIMARY)
-        self.card_stock_bajo = self.crear_tarjeta_stat(frame_stats, "⚠️ Stock Bajo", "0", Theme.COLOR_DANGER)
-        self.card_valor_total = self.crear_tarjeta_stat(frame_stats, "💰 Valor Total", "$0", Theme.COLOR_SUCCESS)
-        self.card_pedidos = self.crear_tarjeta_stat(frame_stats, "📋 Pedidos", "0", Theme.COLOR_SECONDARY)
+        self.card_total_productos = self.crear_tarjeta_stat(frame_stats, "Productos", "0", Theme.COLOR_PRIMARY)
+        self.card_stock_bajo = self.crear_tarjeta_stat(frame_stats, "Bajo el mínimo", "0", Theme.COLOR_DANGER)
+        self.card_valor_total = self.crear_tarjeta_stat(frame_stats, "Valor del inventario", "$0", Theme.COLOR_SUCCESS)
+        self.card_pedidos = self.crear_tarjeta_stat(frame_stats, "Pedidos pendientes", "0", Theme.COLOR_SECONDARY)
 
         # === SECCIÓN PRINCIPAL: CATEGORÍAS Y PROYECCIONES ===
-        frame_principal = tk.Frame(frame, bg=Theme.COLOR_BG)
-        frame_principal.pack(fill=tk.X, pady=(0, 25))
+        frame_principal = tk.Frame(frame, bg=Theme.COLOR_BG, height=380)
+        frame_principal.pack(fill=tk.X, pady=(0, 16))
+        frame_principal.pack_propagate(False)
+        frame_principal.columnconfigure(0, weight=1, uniform="col")
+        frame_principal.columnconfigure(1, weight=1, uniform="col")
+        frame_principal.rowconfigure(0, weight=1)
 
-        # Frame izquierdo - Gráfica de categorías (altura fija)
-        frame_grafica_izq = tk.Frame(frame_principal, bg=Theme.COLOR_PANEL, width=400, height=350)
-        frame_grafica_izq.pack(side=tk.LEFT, fill=tk.Y, padx=(0, 12))
-        frame_grafica_izq.pack_propagate(False)
+        frame_grafica_izq = tk.Frame(frame_principal, bg=Theme.COLOR_PANEL, highlightthickness=1,
+                                     highlightbackground=Theme.COLOR_BORDER)
+        frame_grafica_izq.grid(row=0, column=0, sticky="nsew", padx=(0, 8))
 
-        label_cat = tk.Label(frame_grafica_izq, text="📊 Productos por Categoría",
-                            font=Theme.FONT_SUBTITLE,
+        label_cat = tk.Label(frame_grafica_izq, text="Productos por categoría",
+                            font=Theme.FONT_SECTION,
                             bg=Theme.COLOR_PANEL,
                             fg=Theme.COLOR_TEXT)
-        label_cat.pack(pady=(15, 5))
+        label_cat.pack(anchor="w", padx=18, pady=(14, 0))
 
         # Contenedor para la gráfica de categorías
         self.frame_grafica_categorias = tk.Frame(frame_grafica_izq, bg=Theme.COLOR_PANEL)
         self.frame_grafica_categorias.pack(fill=tk.BOTH, expand=True, padx=10, pady=(5, 10))
 
         # Frame derecho - Proyecciones IA (altura fija)
-        frame_proyecciones_container = tk.Frame(frame_principal, bg=Theme.COLOR_PANEL, width=400, height=350)
-        frame_proyecciones_container.pack(side=tk.LEFT, fill=tk.Y, padx=(12, 0))
-        frame_proyecciones_container.pack_propagate(False)
-
-        label_ia = tk.Label(frame_proyecciones_container, text="🤖 Proyecciones Inteligentes",
-                            font=Theme.FONT_SUBTITLE,
-                            bg=Theme.COLOR_PANEL,
-                            fg=Theme.COLOR_TEXT)
-        label_ia.pack(pady=(15, 5))
+        frame_proyecciones_container = tk.Frame(frame_principal, bg=Theme.COLOR_PANEL, highlightthickness=1,
+                                                highlightbackground=Theme.COLOR_BORDER)
+        frame_proyecciones_container.grid(row=0, column=1, sticky="nsew", padx=(8, 0))
 
         # Contenedor para proyecciones IA
         self.frame_proyecciones = tk.Frame(frame_proyecciones_container, bg=Theme.COLOR_PANEL)
-        self.frame_proyecciones.pack(fill=tk.BOTH, expand=True, padx=10, pady=(5, 10))
+        self.frame_proyecciones.pack(fill=tk.BOTH, expand=True, padx=2, pady=2)
 
         # === PRODUCTOS CRÍTICOS (Stock Bajo) ===
-        frame_stock_bajo = tk.Frame(frame, bg=Theme.COLOR_PANEL)
-        frame_stock_bajo.pack(fill=tk.X, pady=(0, 25))
+        frame_stock_bajo = tk.Frame(frame, bg=Theme.COLOR_PANEL, highlightthickness=1,
+                                    highlightbackground=Theme.COLOR_BORDER)
+        frame_stock_bajo.pack(fill=tk.X, pady=(0, 16))
 
-        label_stock_bajo = tk.Label(frame_stock_bajo, text="⚠️ Productos Críticos - Requieren Atención",
-                                    font=Theme.FONT_SUBTITLE,
+        label_stock_bajo = tk.Label(frame_stock_bajo, text="Bajo el mínimo",
+                                    font=Theme.FONT_SECTION,
                                     bg=Theme.COLOR_PANEL,
                                     fg=Theme.COLOR_TEXT)
         label_stock_bajo.pack(anchor="w", padx=20, pady=(15, 10))
@@ -649,7 +633,7 @@ Ver documentación completa en DOCUMENTACION_API.md"""
         frame_vencimiento = tk.Frame(frame, bg=self.theme_manager.get_color('panel'))
         frame_vencimiento.pack(fill=tk.X, pady=(0, 25))
 
-        label_vencimiento = tk.Label(frame_vencimiento, text="⏰ Productos Próximos a Vencer",
+        label_vencimiento = tk.Label(frame_vencimiento, text="Productos Próximos a Vencer",
                                     font=Theme.FONT_SUBTITLE,
                                     bg=self.theme_manager.get_color('panel'),
                                     fg=self.theme_manager.get_color('text'))
@@ -681,72 +665,22 @@ Ver documentación completa en DOCUMENTACION_API.md"""
         self.tree_vencimiento.pack(fill=tk.BOTH, expand=True)
         scroll_y_venc.config(command=self.tree_vencimiento.yview)
 
-    def crear_tarjeta_stat(self, parent, titulo, valor, color):
-        """Crea una tarjeta de estadística estilo macOS con esquinas redondeadas"""
-        # Contenedor con padding
-        container = tk.Frame(parent, bg=Theme.COLOR_BG)
-        container.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=8)
-
-        # Simular sombra con un frame gris claro ligeramente desplazado
-        shadow_frame = tk.Frame(container, bg="#E5E5EA")
-        shadow_frame.place(relx=0.01, rely=0.01, relwidth=0.98, relheight=0.98)
-
-        # Tarjeta principal con fondo blanco
-        card_frame = tk.Frame(container, bg=Theme.COLOR_PANEL, relief=tk.FLAT, borderwidth=0)
-        card_frame.place(relx=0, rely=0, relwidth=1, relheight=1)
-
-        # Barra lateral izquierda de color (delgada)
-        color_bar = tk.Frame(card_frame, bg=color, width=4)
-        color_bar.pack(side=tk.LEFT, fill=tk.Y)
-
-        # Contenido
-        content = tk.Frame(card_frame, bg=Theme.COLOR_PANEL)
-        content.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=15, pady=12)
-
-        # Título pequeño en gris
-        label_titulo = tk.Label(content, text=titulo,
-                               font=("Segoe UI", 9),
-                               bg=Theme.COLOR_PANEL,
-                               fg=Theme.COLOR_MUTED)
-        label_titulo.pack(anchor='w', pady=(0, 4))
-
-        # Valor grande y destacado
-        label_valor = tk.Label(content, text=valor,
-                              font=("Segoe UI", 20, "bold"),
-                              bg=Theme.COLOR_PANEL,
-                              fg=Theme.COLOR_TEXT)
-        label_valor.pack(anchor='w')
-
+    def crear_tarjeta_stat(self, parent, titulo, valor, color=None):
+        """Cifra clave: etiqueta pequeña y número grande, con borde de 1px."""
+        card = tk.Frame(parent, bg=Theme.COLOR_PANEL, highlightthickness=1,
+                        highlightbackground=Theme.COLOR_BORDER)
+        card.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 12))
+        tk.Label(card, text=titulo, font=Theme.FONT_LABEL, bg=Theme.COLOR_PANEL,
+                 fg=Theme.COLOR_MUTED).pack(anchor='w', padx=18, pady=(14, 2))
+        label_valor = tk.Label(card, text=valor, font=Theme.FONT_STAT, bg=Theme.COLOR_PANEL,
+                               fg=Theme.COLOR_TEXT)
+        label_valor.pack(anchor='w', padx=18, pady=(0, 14))
         return label_valor
 
-    def crear_boton(self, parent, texto, comando, color_bg, color_fg="white"):
-        """Crea un botón con estilo macOS y efectos hover"""
-        btn = tk.Button(parent,
-                       text=texto,
-                       command=comando,
-                       bg=color_bg,
-                       fg=color_fg,
-                       font=Theme.FONT_BUTTON,
-                       relief=tk.FLAT,
-                       padx=24,
-                       pady=12,
-                       cursor="hand2",
-                       borderwidth=0,
-                       highlightthickness=0,
-                       activebackground=self._oscurecer_color(color_bg),
-                       activeforeground=color_fg)
-
-        # Efectos hover
-        def on_enter(e):
-            btn['background'] = self._oscurecer_color(color_bg)
-
-        def on_leave(e):
-            btn['background'] = color_bg
-
-        btn.bind("<Enter>", on_enter)
-        btn.bind("<Leave>", on_leave)
-
-        return btn
+    def crear_boton(self, parent, texto, comando, color_bg=None, color_fg=None):
+        """Botón del sistema visual. El rol sale del texto (Nuevo/Guardar = principal,
+        Eliminar = peligro, el resto secundario). color_bg/color_fg se ignoran."""
+        return tk.Button(parent, text=texto, command=comando)
 
     def _oscurecer_color(self, hex_color):
         """Oscurece un color hex en un 10% para efecto hover"""
@@ -768,6 +702,18 @@ Ver documentación completa en DOCUMENTACION_API.md"""
         text_color = Theme.COLOR_TEXT
         tree.tag_configure('oddrow', background=odd_color, foreground=text_color)
         tree.tag_configure('evenrow', background=even_color, foreground=text_color)
+        self._alinear_numeros(tree)
+
+    COLUMNAS_NUMERICAS = {"id", "stock", "minimo", "maximo", "precio", "precio_compra",
+                          "precio_venta", "cantidad", "dias_restantes", "valor", "total",
+                          "costo", "subtotal"}
+
+    def _alinear_numeros(self, tree):
+        """Números a la derecha para poder compararlos de un vistazo."""
+        for col in tree["columns"]:
+            lado = "e" if col in self.COLUMNAS_NUMERICAS else "w"
+            tree.column(col, anchor=lado)
+            tree.heading(col, anchor=lado)
 
     def actualizar_colores_tablas(self):
         """Actualiza los colores de todas las tablas cuando cambia el tema"""
@@ -901,47 +847,35 @@ Ver documentación completa en DOCUMENTACION_API.md"""
             label.pack(expand=True)
             return
 
-        # Crear figura de matplotlib con tema
+        # Barras horizontales ordenadas: más fáciles de leer que una torta
+        # cuando hay muchas categorías pequeñas.
         bg_color = self.theme_manager.get_color('chart_bg')
         text_color = self.theme_manager.get_color('text')
+        muted = self.theme_manager.get_color('text_secondary')
+        acento = self.theme_manager.get_color('primary')
 
-        fig = Figure(figsize=(5, 4), dpi=100, facecolor=bg_color)
+        datos = sorted(categorias.items(), key=lambda x: x[1])[-8:]
+        nombres = [n for n, _ in datos]
+        valores = [v for _, v in datos]
+
+        fig = Figure(figsize=(5, 3.2), dpi=100, facecolor=bg_color)
         ax = fig.add_subplot(111)
         ax.set_facecolor(bg_color)
-
-        # Título del gráfico
-        ax.set_title('Distribución por Grupos de Categorías',
-                    fontsize=12,
-                    color=text_color,
-                    pad=15,
-                    weight='semibold')
-
-        # Colores del tema
-        colores = self.theme_manager.get_chart_colors()
-
-        # Crear gráfica de pastel
-        wedges, texts, autotexts = ax.pie(categorias.values(),
-                                           labels=categorias.keys(),
-                                           autopct='%1.1f%%',
-                                           startangle=90,
-                                           colors=colores[:len(categorias)],
-                                           textprops={'color': text_color})
-
-        # Estilo de texto
-        for text in texts:
-            text.set_fontsize(10)
-            text.set_color(text_color)
-
-        for autotext in autotexts:
-            autotext.set_color('white')
-            autotext.set_fontsize(9)
-            autotext.set_weight('bold')
-
-        ax.axis('equal')
+        barras = ax.barh(nombres, valores, color=acento, height=0.6)
+        for barra, valor in zip(barras, valores):
+            ax.text(barra.get_width() + max(valores) * 0.02, barra.get_y() + barra.get_height() / 2,
+                    f"{valor}", va='center', fontsize=9, color=muted)
+        ax.tick_params(axis='y', colors=text_color, labelsize=9, length=0)
+        ax.set_xticks([])
+        for lado in ax.spines.values():
+            lado.set_visible(False)
+        ax.set_xlim(0, max(valores) * 1.15)
+        fig.subplots_adjust(left=0.32, right=0.97, top=0.97, bottom=0.03)
 
         # Integrar con tkinter
         canvas = FigureCanvasTkAgg(fig, master=self.frame_grafica_categorias)
         canvas.draw()
+        canvas.get_tk_widget().configure(highlightthickness=0, bg=bg_color)
         canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
 
     def actualizar_proyecciones_ia(self, productos, productos_stock_bajo):
@@ -960,158 +894,83 @@ Ver documentación completa en DOCUMENTACION_API.md"""
             lambda e: canvas_proy.configure(scrollregion=canvas_proy.bbox("all"))
         )
 
-        canvas_proy.create_window((0, 0), window=frame_proy_scroll, anchor="nw")
+        id_proy = canvas_proy.create_window((0, 0), window=frame_proy_scroll, anchor="nw")
+        canvas_proy.bind("<Configure>", lambda e: canvas_proy.itemconfigure(id_proy, width=e.width))
         canvas_proy.configure(yscrollcommand=scrollbar_proy.set)
 
         canvas_proy.pack(side="left", fill="both", expand=True)
         scrollbar_proy.pack(side="right", fill="y")
 
-        # === ANÁLISIS CON IA ===
-        ai_assistant = AIAssistant()
-
-        # 1. Productos que se agotarán pronto
-        # Colores adaptativos según tema
-        if self.theme_manager.is_dark():
-            bg_warning = "#4A3800"
-            fg_warning = "#FFD60A"
-        else:
-            bg_warning = "#FFF3CD"
-            fg_warning = "#856404"
-
-        frame_agotamiento = tk.Frame(frame_proy_scroll, bg=bg_warning, relief=tk.FLAT)
-        frame_agotamiento.pack(fill=tk.X, padx=10, pady=(10, 10))
-
-        tk.Label(frame_agotamiento, text="⚠️ SE AGOTARÁN PRONTO",
-                font=("Segoe UI Semibold", 11),
-                bg=bg_warning, fg=fg_warning).pack(anchor="w", padx=10, pady=(8, 5))
-
-        productos_agotarse = []
+        # === PROYECCIONES ===
+        # Usa el mismo cálculo que "Análisis IA" para que los números coincidan
+        # en toda la aplicación. En el dashboard siempre es local: así abre
+        # rápido y no gasta llamadas a la IA externa en cada actualización.
+        asistente = AIAssistant(usar_ia=False)
+        analisis = {}
         for p in productos:
-            if p[7] > 0:  # Si tiene stock
-                # Analizar movimientos de los últimos 30 días
-                movimientos = self.movimiento_model.obtener_por_producto(p[0])
-                salidas_30_dias = [m for m in movimientos if m[3] == 'SALIDA']
+            r = asistente.analizar_producto(p[0])
+            if r:
+                analisis[p[0]] = r
 
-                if salidas_30_dias:
-                    total_salidas = sum(m[2] for m in salidas_30_dias)
-                    ventas_diarias = total_salidas / 30
+        def seccion(titulo, ayuda):
+            cont = tk.Frame(frame_proy_scroll, bg=Theme.COLOR_PANEL)
+            cont.pack(fill=tk.X, padx=16, pady=(14, 4))
+            tk.Label(cont, text=titulo, font=Theme.FONT_SECTION,
+                     bg=Theme.COLOR_PANEL, fg=Theme.COLOR_TEXT).pack(anchor="w")
+            tk.Label(cont, text=ayuda, font=Theme.FONT_SMALL,
+                     bg=Theme.COLOR_PANEL, fg=Theme.COLOR_MUTED).pack(anchor="w", pady=(0, 6))
+            return cont
 
-                    if ventas_diarias > 0:
-                        dias_restantes = p[7] / ventas_diarias
+        def fila(cont, izquierda, derecha, color_derecha=None):
+            f = tk.Frame(cont, bg=Theme.COLOR_PANEL)
+            f.pack(fill=tk.X, pady=1)
+            tk.Label(f, text=izquierda, font=Theme.FONT_BASE, anchor="w",
+                     bg=Theme.COLOR_PANEL, fg=Theme.COLOR_TEXT).pack(side=tk.LEFT)
+            tk.Label(f, text=derecha, font=Theme.FONT_NUM,
+                     bg=Theme.COLOR_PANEL, fg=color_derecha or Theme.COLOR_MUTED).pack(side=tk.RIGHT)
 
-                        # Si se agotará en menos de 7 días
-                        if dias_restantes < 7:
-                            productos_agotarse.append((p[2], dias_restantes, ventas_diarias))
+        def vacio(cont, texto):
+            tk.Label(cont, text=texto, font=Theme.FONT_BASE,
+                     bg=Theme.COLOR_PANEL, fg=Theme.COLOR_MUTED).pack(anchor="w", pady=2)
 
-        if productos_agotarse:
-            productos_agotarse.sort(key=lambda x: x[1])  # Ordenar por días restantes
-            for nombre, dias, ventas_dia in productos_agotarse[:5]:
-                tk.Label(frame_agotamiento,
-                        text=f"• {nombre}: ~{dias:.1f} días ({ventas_dia:.1f} und/día)",
-                        font=Theme.FONT_BASE,
-                        bg=bg_warning, fg=fg_warning).pack(anchor="w", padx=20, pady=2)
-        else:
-            fg_success = Theme.COLOR_SUCCESS
-            tk.Label(frame_agotamiento, text="✓ Ningún producto en riesgo inmediato",
-                    font=Theme.FONT_BASE,
-                    bg=bg_warning, fg=fg_success).pack(anchor="w", padx=20, pady=5)
+        # 1. Se agotan pronto (tienen stock, pero a este ritmo duran menos de 7 días)
+        cont = seccion("Se agotan esta semana", "Con stock hoy, pero al ritmo de venta de los últimos 30 días")
+        agotan = sorted(
+            (r for r in analisis.values()
+             if r['producto']['stock_actual'] > 0 and r['analisis']['dias_para_agotar'] < 7),
+            key=lambda r: r['analisis']['dias_para_agotar'])[:5]
+        for r in agotan:
+            dias = r['analisis']['dias_para_agotar']
+            color = Theme.COLOR_DANGER if dias <= 2 else Theme.COLOR_WARNING_TEXT
+            fila(cont, r['producto']['nombre'], f"{dias:.1f} días", color)
+        if not agotan:
+            vacio(cont, "Ningún producto en riesgo esta semana")
 
-        frame_agotamiento.pack_configure(pady=(0, 5))
+        # 2. Qué pedir (productos bajo el mínimo)
+        cont = seccion("Qué pedir", "Productos bajo el mínimo y la cantidad sugerida")
+        pedir = [analisis[p[0]] for p in productos_stock_bajo if p[0] in analisis]
+        orden = {'CRÍTICA': 0, 'ALTA': 1, 'MEDIA': 2, 'BAJA': 3}
+        pedir.sort(key=lambda r: orden.get(r['sugerencia']['urgencia'], 4))
+        for r in pedir[:5]:
+            fila(cont, r['producto']['nombre'], f"{r['sugerencia']['cantidad']} und")
+        if not pedir:
+            vacio(cont, "Todo el stock está sobre el mínimo")
 
-        # 2. Recomendaciones de pedido
-        if self.theme_manager.is_dark():
-            bg_info = "#0D3A52"
-            fg_info = "#5AC8FA"
-        else:
-            bg_info = "#D1ECF1"
-            fg_info = "#0C5460"
-
-        frame_recomendaciones = tk.Frame(frame_proy_scroll, bg=bg_info, relief=tk.FLAT)
-        frame_recomendaciones.pack(fill=tk.X, padx=10, pady=5)
-
-        tk.Label(frame_recomendaciones, text="💡 RECOMENDACIONES INTELIGENTES",
-                font=("Segoe UI Semibold", 11),
-                bg=bg_info, fg=fg_info).pack(anchor="w", padx=10, pady=(8, 5))
-
-        # Analizar productos con stock bajo y calcular cantidad sugerida
-        recomendaciones = []
-        for p in productos_stock_bajo[:5]:  # Top 5 críticos
-            stock_actual = p[7]
-            stock_minimo = p[8]
-            stock_maximo = p[9]
-
-            # Calcular cantidad sugerida básica
-            cantidad_sugerida = int((stock_maximo - stock_actual) * 0.7)
-
-            # Obtener velocidad de ventas
-            movimientos = self.movimiento_model.obtener_por_producto(p[0])
-            salidas = [m for m in movimientos if m[3] == 'SALIDA']
-
-            if salidas:
-                total_salidas = sum(m[2] for m in salidas[-10:])  # Últimas 10 salidas
-                promedio_salida = total_salidas / min(len(salidas), 10)
-
-                # Ajustar por velocidad
-                if promedio_salida > 10:
-                    cantidad_sugerida = int(cantidad_sugerida * 1.3)  # +30% si es rápido
-                    velocidad = "Alta rotación"
-                elif promedio_salida > 5:
-                    velocidad = "Rotación media"
-                else:
-                    cantidad_sugerida = int(cantidad_sugerida * 0.7)  # -30% si es lento
-                    velocidad = "Baja rotación"
-
-                recomendaciones.append((p[2], cantidad_sugerida, velocidad))
-
-        if recomendaciones:
-            for nombre, cantidad, velocidad in recomendaciones:
-                tk.Label(frame_recomendaciones,
-                        text=f"• {nombre}: Pedir {cantidad} unidades ({velocidad})",
-                        font=Theme.FONT_BASE,
-                        bg=bg_info, fg=fg_info).pack(anchor="w", padx=20, pady=2)
-        else:
-            tk.Label(frame_recomendaciones, text="✓ Stock en niveles óptimos",
-                    font=Theme.FONT_BASE,
-                    bg=bg_info, fg=Theme.COLOR_SUCCESS).pack(anchor="w", padx=20, pady=5)
-
-        frame_recomendaciones.pack_configure(pady=5)
-
-        # 3. Tendencias detectadas
-        if self.theme_manager.is_dark():
-            bg_success = "#1A3D2E"
-            fg_success_text = "#30D158"
-        else:
-            bg_success = "#D4EDDA"
-            fg_success_text = "#155724"
-
-        frame_tendencias = tk.Frame(frame_proy_scroll, bg=bg_success, relief=tk.FLAT)
-        frame_tendencias.pack(fill=tk.X, padx=10, pady=5)
-
-        tk.Label(frame_tendencias, text="📈 TENDENCIAS DETECTADAS",
-                font=("Segoe UI Semibold", 11),
-                bg=bg_success, fg=fg_success_text).pack(anchor="w", padx=10, pady=(8, 5))
-
-        # Analizar categorías con más movimiento
-        categorias_movimiento = {}
+        # 3. Lo que más se vende (por categoría)
+        cont = seccion("Lo que más se vende", "Unidades vendidas por categoría, últimos 30 días")
+        por_categoria = {}
         for p in productos:
-            cat = p[3] if p[3] else "Sin categoría"
-            movimientos = self.movimiento_model.obtener_por_producto(p[0])
-            salidas = [m for m in movimientos if m[3] == 'SALIDA']
-            categorias_movimiento[cat] = categorias_movimiento.get(cat, 0) + len(salidas)
-
-        if categorias_movimiento:
-            cat_top = sorted(categorias_movimiento.items(), key=lambda x: x[1], reverse=True)[:3]
-            for cat, mov in cat_top:
-                tk.Label(frame_tendencias,
-                        text=f"• {cat}: {mov} movimientos registrados",
-                        font=Theme.FONT_BASE,
-                        bg=bg_success, fg=fg_success_text).pack(anchor="w", padx=20, pady=2)
-        else:
-            tk.Label(frame_tendencias, text="• Sin movimientos registrados aún",
-                    font=Theme.FONT_BASE,
-                    bg=bg_success, fg=Theme.COLOR_MUTED).pack(anchor="w", padx=20, pady=5)
-
-        frame_tendencias.pack_configure(pady=(5, 10))
+            r = analisis.get(p[0])
+            if r:
+                cat = p[3] or "Sin categoría"
+                vendidas = r['analisis']['ventas_diarias_promedio'] * 30
+                por_categoria[cat] = por_categoria.get(cat, 0) + vendidas
+        top = [c for c in sorted(por_categoria.items(), key=lambda x: x[1], reverse=True) if c[1] > 0][:3]
+        for cat, unidades in top:
+            fila(cont, cat, f"{unidades:,.0f} und")
+        if not top:
+            vacio(cont, "Aún no hay ventas registradas")
+        tk.Frame(frame_proy_scroll, bg=Theme.COLOR_PANEL, height=12).pack()
 
     # ==================== PRODUCTOS ====================
     def construir_productos(self):
@@ -1124,11 +983,6 @@ Ver documentación completa en DOCUMENTACION_API.md"""
         frame_top.pack(fill=tk.X, pady=(0, 20))
 
         # Búsqueda con mejor contraste
-        label_buscar = tk.Label(frame_top, text="🔍",
-                               font=("Segoe UI", 14),
-                               bg=Theme.COLOR_BG,
-                               fg=Theme.COLOR_TEXT)
-        label_buscar.pack(side=tk.LEFT, padx=(0, 8))
 
         self.entry_buscar_producto = tk.Entry(frame_top,
                                               font=Theme.FONT_BASE,
@@ -1136,12 +990,12 @@ Ver documentación completa en DOCUMENTACION_API.md"""
                                               relief=tk.FLAT,
                                               bg=Theme.COLOR_PANEL,
                                               fg=Theme.COLOR_TEXT,
-                                              insertbackground=Theme.COLOR_PRIMARY,
-                                              borderwidth=2,
-                                              highlightthickness=2,
-                                              highlightbackground="#D1D1D6",
+                                              insertbackground=Theme.COLOR_TEXT,
+                                              borderwidth=0,
+                                              highlightthickness=1,
+                                              highlightbackground=self.theme_manager.get_color('border_strong'),
                                               highlightcolor=Theme.COLOR_PRIMARY)
-        self.entry_buscar_producto.pack(side=tk.LEFT, padx=(0, 15), ipady=8)
+        self.entry_buscar_producto.pack(side=tk.LEFT, padx=(0, 15), ipady=7, ipadx=8)
         self.entry_buscar_producto.bind('<KeyRelease>', lambda e: self.buscar_productos())
 
         # Placeholder text
@@ -1162,17 +1016,17 @@ Ver documentación completa en DOCUMENTACION_API.md"""
         self.entry_buscar_producto.bind('<FocusOut>', on_focus_out)
 
         # Botones con iconos
-        btn_nuevo = self.crear_boton(frame_top, "➕ Nuevo Producto",
+        btn_nuevo = self.crear_boton(frame_top, "Nuevo Producto",
                                      self.nuevo_producto,
                                      Theme.COLOR_SUCCESS)
         btn_nuevo.pack(side=tk.RIGHT, padx=5)
 
-        btn_ia = self.crear_boton(frame_top, "🤖 Análisis IA",
+        btn_ia = self.crear_boton(frame_top, "Análisis IA",
                                  self.analisis_ia_producto,
                                  Theme.COLOR_SECONDARY)
         btn_ia.pack(side=tk.RIGHT, padx=5)
 
-        btn_analisis_detallado = self.crear_boton(frame_top, "📊 Análisis Detallado",
+        btn_analisis_detallado = self.crear_boton(frame_top, "Análisis Detallado",
                                                   self.mostrar_analisis_detallado,
                                                   "#FF9F0A")  # Color accent
         btn_analisis_detallado.pack(side=tk.RIGHT, padx=5)
@@ -1228,22 +1082,22 @@ Ver documentación completa en DOCUMENTACION_API.md"""
         frame_bottom = tk.Frame(frame, bg=Theme.COLOR_BG)
         frame_bottom.pack(fill=tk.X, pady=(15, 0))
 
-        btn_editar = self.crear_boton(frame_bottom, "✏️ Editar",
+        btn_editar = self.crear_boton(frame_bottom, "Editar",
                                       self.editar_producto,
                                       Theme.COLOR_PRIMARY)
         btn_editar.pack(side=tk.LEFT, padx=5)
 
-        btn_eliminar = self.crear_boton(frame_bottom, "🗑️ Eliminar",
+        btn_eliminar = self.crear_boton(frame_bottom, "Eliminar",
                                         self.eliminar_producto,
                                         Theme.COLOR_DANGER)
         btn_eliminar.pack(side=tk.LEFT, padx=5)
 
-        btn_entrada = self.crear_boton(frame_bottom, "📥 Entrada Stock",
+        btn_entrada = self.crear_boton(frame_bottom, "Entrada Stock",
                                        self.entrada_stock,
                                        Theme.COLOR_SUCCESS)
         btn_entrada.pack(side=tk.LEFT, padx=5)
 
-        btn_salida = self.crear_boton(frame_bottom, "📤 Salida Stock",
+        btn_salida = self.crear_boton(frame_bottom, "Salida Stock",
                                       self.salida_stock,
                                       Theme.COLOR_WARNING,
                                       Theme.COLOR_TEXT)
@@ -1397,7 +1251,7 @@ Ver documentación completa en DOCUMENTACION_API.md"""
         frame_top = tk.Frame(frame, bg=Theme.COLOR_BG)
         frame_top.pack(fill=tk.X, pady=(0, 20))
 
-        btn_nuevo = self.crear_boton(frame_top, "➕ Nuevo Proveedor",
+        btn_nuevo = self.crear_boton(frame_top, "Nuevo Proveedor",
                                      self.nuevo_proveedor,
                                      Theme.COLOR_SUCCESS)
         btn_nuevo.pack(side=tk.RIGHT, padx=5)
@@ -1441,17 +1295,17 @@ Ver documentación completa en DOCUMENTACION_API.md"""
         frame_bottom = tk.Frame(frame, bg=Theme.COLOR_BG)
         frame_bottom.pack(fill=tk.X, pady=(15, 0))
 
-        btn_editar = self.crear_boton(frame_bottom, "✏️ Editar",
+        btn_editar = self.crear_boton(frame_bottom, "Editar",
                                       self.editar_proveedor,
                                       Theme.COLOR_PRIMARY)
         btn_editar.pack(side=tk.LEFT, padx=5)
 
-        btn_eliminar = self.crear_boton(frame_bottom, "🗑️ Eliminar",
+        btn_eliminar = self.crear_boton(frame_bottom, "Eliminar",
                                         self.eliminar_proveedor,
                                         Theme.COLOR_DANGER)
         btn_eliminar.pack(side=tk.LEFT, padx=5)
 
-        btn_ver_productos = self.crear_boton(frame_bottom, "📦 Ver Productos",
+        btn_ver_productos = self.crear_boton(frame_bottom, "Ver Productos",
                                              self.ver_productos_proveedor,
                                              Theme.COLOR_SECONDARY)
         btn_ver_productos.pack(side=tk.LEFT, padx=5)
@@ -1578,7 +1432,7 @@ Ver documentación completa en DOCUMENTACION_API.md"""
         frame_top = tk.Frame(frame, bg=Theme.COLOR_BG)
         frame_top.pack(fill=tk.X, pady=(0, 20))
 
-        label = tk.Label(frame_top, text="🤖 Pedidos Automáticos al Proveedor",
+        label = tk.Label(frame_top, text="Pedidos Automáticos al Proveedor",
                         font=Theme.FONT_SUBTITLE,
                         bg=Theme.COLOR_BG,
                         fg=Theme.COLOR_TEXT)
@@ -1587,9 +1441,9 @@ Ver documentación completa en DOCUMENTACION_API.md"""
         # Badge con cantidad de pendientes
         self.label_pedidos_pendientes = tk.Label(frame_top,
                                                  text="0 pendientes",
-                                                 font=Theme.FONT_LABEL,
-                                                 bg=Theme.COLOR_WARNING,
-                                                 fg=Theme.COLOR_TEXT,
+                                                 font=("Segoe UI Semibold", 10),
+                                                 bg=Theme.COLOR_PRIMARY_SOFT,
+                                                 fg=Theme.COLOR_PRIMARY,
                                                  padx=12,
                                                  pady=6)
         self.label_pedidos_pendientes.pack(side=tk.LEFT, padx=15)
@@ -1641,17 +1495,17 @@ Ver documentación completa en DOCUMENTACION_API.md"""
         frame_bottom = tk.Frame(frame, bg=Theme.COLOR_BG)
         frame_bottom.pack(fill=tk.X, pady=(15, 0))
 
-        btn_procesar = self.crear_boton(frame_bottom, "✓ Marcar Procesado",
+        btn_procesar = self.crear_boton(frame_bottom, "Marcar Procesado",
                                         self.procesar_pedido,
                                         Theme.COLOR_PRIMARY)
         btn_procesar.pack(side=tk.LEFT, padx=5)
 
-        btn_recibido = self.crear_boton(frame_bottom, "📥 Marcar Recibido",
+        btn_recibido = self.crear_boton(frame_bottom, "Marcar Recibido",
                                         self.recibir_pedido,
                                         Theme.COLOR_SUCCESS)
         btn_recibido.pack(side=tk.LEFT, padx=5)
 
-        btn_cancelar = self.crear_boton(frame_bottom, "✕ Cancelar Pedido",
+        btn_cancelar = self.crear_boton(frame_bottom, "Cancelar Pedido",
                                         self.cancelar_pedido,
                                         Theme.COLOR_DANGER)
         btn_cancelar.pack(side=tk.LEFT, padx=5)
@@ -1843,19 +1697,19 @@ Ver documentación completa en DOCUMENTACION_API.md"""
         frame_botones = tk.Frame(frame, bg=Theme.COLOR_BG)
         frame_botones.pack(pady=20, padx=100)
 
-        btn_reporte_stock = self.crear_boton(frame_botones, "📊 Reporte de Stock",
+        btn_reporte_stock = self.crear_boton(frame_botones, "Reporte de Stock",
                                              self.generar_reporte_stock,
                                              Theme.COLOR_PRIMARY)
         btn_reporte_stock.config(font=("Segoe UI Semibold", 12), padx=40, pady=18)
         btn_reporte_stock.pack(pady=12, fill=tk.X)
 
-        btn_reporte_valor = self.crear_boton(frame_botones, "💰 Reporte de Valor de Inventario",
+        btn_reporte_valor = self.crear_boton(frame_botones, "Reporte de Valor de Inventario",
                                              self.generar_reporte_valor,
                                              Theme.COLOR_SUCCESS)
         btn_reporte_valor.config(font=("Segoe UI Semibold", 12), padx=40, pady=18)
         btn_reporte_valor.pack(pady=12, fill=tk.X)
 
-        btn_reporte_movimientos = self.crear_boton(frame_botones, "📋 Reporte de Movimientos",
+        btn_reporte_movimientos = self.crear_boton(frame_botones, "Reporte de Movimientos",
                                                    self.generar_reporte_movimientos,
                                                    Theme.COLOR_SECONDARY)
         btn_reporte_movimientos.config(font=("Segoe UI Semibold", 12), padx=40, pady=18)
@@ -1965,26 +1819,30 @@ Salidas: {salidas}
         """Construye la pestaña de configuración"""
         from webhook_client import WebhookClient
 
-        frame = tk.Frame(self.tab_configuracion, bg=Theme.COLOR_BG)
-        frame.pack(fill=tk.BOTH, expand=True, padx=30, pady=30)
+        # Contenedor con scroll: la pestaña crece con cada sección
+        canvas = tk.Canvas(self.tab_configuracion, bg=Theme.COLOR_BG, highlightthickness=0)
+        barra = ttk.Scrollbar(self.tab_configuracion, orient="vertical", command=canvas.yview)
+        contenido = tk.Frame(canvas, bg=Theme.COLOR_BG)
+        contenido.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        ventana_id = canvas.create_window((0, 0), window=contenido, anchor="nw")
+        canvas.bind("<Configure>", lambda e: canvas.itemconfigure(ventana_id, width=e.width))
+        canvas.configure(yscrollcommand=barra.set)
+        canvas.pack(side="left", fill="both", expand=True)
+        barra.pack(side="right", fill="y")
 
-        # Título
-        label_titulo = tk.Label(frame, text="⚙️ Configuración de n8n e IA",
-                               font=Theme.FONT_TITLE,
-                               bg=Theme.COLOR_BG,
-                               fg=Theme.COLOR_TEXT)
-        label_titulo.pack(pady=(0, 30))
+        frame = tk.Frame(contenido, bg=Theme.COLOR_BG)
+        frame.pack(fill=tk.BOTH, expand=True, padx=24, pady=24)
 
-        # Panel principal de configuración
-        panel = tk.Frame(frame, bg=Theme.COLOR_PANEL)
-        panel.pack(fill=tk.BOTH, expand=True)
+        self._construir_config_ia(frame)
 
-        # Frame interior con padding
+        panel = tk.Frame(frame, bg=Theme.COLOR_PANEL, highlightthickness=1,
+                         highlightbackground=Theme.COLOR_BORDER)
+        panel.pack(fill=tk.X)
         frame_config = tk.Frame(panel, bg=Theme.COLOR_PANEL)
-        frame_config.pack(fill=tk.BOTH, expand=True, padx=40, pady=40)
+        frame_config.pack(fill=tk.BOTH, expand=True, padx=28, pady=24)
 
         # ===== Webhook URL =====
-        label_webhook = tk.Label(frame_config, text="🔗 URL del Webhook de n8n",
+        label_webhook = tk.Label(frame_config, text="URL del Webhook de n8n",
                                 font=Theme.FONT_SUBTITLE,
                                 bg=Theme.COLOR_PANEL,
                                 fg=Theme.COLOR_TEXT)
@@ -2037,7 +1895,7 @@ Salidas: {salidas}
         separator1 = tk.Frame(frame_config, bg=Theme.SHADOW_COLOR, height=1)
         separator1.pack(fill=tk.X, pady=30)
 
-        label_notif = tk.Label(frame_config, text="🔔 Notificaciones Automáticas",
+        label_notif = tk.Label(frame_config, text="Notificaciones Automáticas",
                               font=Theme.FONT_SUBTITLE,
                               bg=Theme.COLOR_PANEL,
                               fg=Theme.COLOR_TEXT)
@@ -2078,17 +1936,17 @@ Salidas: {salidas}
         frame_botones = tk.Frame(frame_config, bg=Theme.COLOR_PANEL)
         frame_botones.pack(fill=tk.X, pady=(0, 20))
 
-        btn_guardar = self.crear_boton(frame_botones, "💾 Guardar Configuración",
+        btn_guardar = self.crear_boton(frame_botones, "Guardar Configuración",
                                        self.guardar_configuracion,
                                        Theme.COLOR_SUCCESS)
         btn_guardar.pack(side=tk.LEFT, padx=(0, 15))
 
-        btn_probar = self.crear_boton(frame_botones, "🧪 Probar Conexión",
+        btn_probar = self.crear_boton(frame_botones, "Probar Conexión",
                                      self.probar_webhook,
                                      Theme.COLOR_PRIMARY)
         btn_probar.pack(side=tk.LEFT, padx=(0, 15))
 
-        btn_abrir_guia = self.crear_boton(frame_botones, "📖 Ver Guía de Integración",
+        btn_abrir_guia = self.crear_boton(frame_botones, "Ver Guía de Integración",
                                          self.abrir_guia_n8n,
                                          Theme.COLOR_SECONDARY)
         btn_abrir_guia.pack(side=tk.LEFT)
@@ -2097,38 +1955,165 @@ Salidas: {salidas}
         separator3 = tk.Frame(frame_config, bg=Theme.SHADOW_COLOR, height=1)
         separator3.pack(fill=tk.X, pady=30)
 
-        label_estado = tk.Label(frame_config, text="📊 Estado del Sistema",
+        label_estado = tk.Label(frame_config, text="Estado del Sistema",
                                font=Theme.FONT_SUBTITLE,
                                bg=Theme.COLOR_PANEL,
                                fg=Theme.COLOR_TEXT)
         label_estado.pack(anchor=tk.W, pady=(0, 15))
 
         # Panel de estado
-        panel_estado = tk.Frame(frame_config, bg="#F9F9FB")
+        panel_estado = tk.Frame(frame_config, bg=Theme.COLOR_SUBTLE)
         panel_estado.pack(fill=tk.X, pady=(0, 20))
 
-        frame_estado_inner = tk.Frame(panel_estado, bg="#F9F9FB")
+        frame_estado_inner = tk.Frame(panel_estado, bg=Theme.COLOR_SUBTLE)
         frame_estado_inner.pack(fill=tk.X, padx=20, pady=20)
 
         self.label_estado_webhook = tk.Label(frame_estado_inner,
-                                             text="🔴 Webhook: No configurado",
+                                             text="Webhook: No configurado",
                                              font=Theme.FONT_BASE,
-                                             bg="#F9F9FB",
+                                             bg=Theme.COLOR_SUBTLE,
                                              fg=Theme.COLOR_TEXT,
                                              anchor=tk.W)
         self.label_estado_webhook.pack(anchor=tk.W, pady=5)
 
         self.label_estado_notif = tk.Label(frame_estado_inner,
-                                           text=f"{'🟢' if notif_activas else '🔴'} Notificaciones: {'Activas' if notif_activas else 'Desactivadas'}",
+                                           text=f"{'●' if notif_activas else '●'} Notificaciones: {'Activas' if notif_activas else 'Desactivadas'}",
                                            font=Theme.FONT_BASE,
-                                           bg="#F9F9FB",
+                                           bg=Theme.COLOR_SUBTLE,
                                            fg=Theme.COLOR_TEXT,
                                            anchor=tk.W)
         self.label_estado_notif.pack(anchor=tk.W, pady=5)
 
         # Actualizar estado inicial
         if url_actual and url_actual != "https://tu-n8n.com/webhook/inventario":
-            self.label_estado_webhook.config(text=f"🟢 Webhook: Configurado")
+            self.label_estado_webhook.config(text=f"Webhook: Configurado")
+
+    # ---------- Inteligencia artificial ----------
+    PROVEEDORES_IA = [
+        ("Modo básico (sin conexión, gratis)", "local"),
+        ("OpenAI (ChatGPT)", "openai"),
+        ("Anthropic (Claude)", "anthropic"),
+        ("Google Gemini", "gemini"),
+        ("Groq", "groq"),
+        ("OpenRouter", "openrouter"),
+        ("DeepSeek", "deepseek"),
+        ("Mistral", "mistral"),
+        ("Ollama (gratis, en esta PC)", "ollama"),
+        ("LM Studio (gratis, en esta PC)", "lmstudio"),
+        ("Otra API compatible con OpenAI", "compatible"),
+    ]
+
+    def _construir_config_ia(self, parent):
+        import config
+        panel = tk.Frame(parent, bg=Theme.COLOR_PANEL, highlightthickness=1,
+                         highlightbackground=Theme.COLOR_BORDER)
+        panel.pack(fill=tk.X, pady=(0, 16))
+        f = tk.Frame(panel, bg=Theme.COLOR_PANEL)
+        f.pack(fill=tk.X, padx=28, pady=24)
+
+        tk.Label(f, text="Inteligencia artificial", font=Theme.FONT_SUBTITLE,
+                 bg=Theme.COLOR_PANEL, fg=Theme.COLOR_TEXT).pack(anchor="w")
+        tk.Label(f, text=("Opcional. Sin IA, el sistema calcula ventas por día, días para agotarse y "
+                          "cantidades a pedir en tu PC, gratis y sin enviar datos. Con IA, además "
+                          "redacta el análisis y el mensaje al proveedor."),
+                 font=Theme.FONT_LABEL, bg=Theme.COLOR_PANEL, fg=Theme.COLOR_MUTED,
+                 wraplength=760, justify="left").pack(anchor="w", pady=(4, 16))
+
+        def campo(etiqueta, ayuda=None):
+            tk.Label(f, text=etiqueta, font=("Segoe UI Semibold", 10), bg=Theme.COLOR_PANEL,
+                     fg=Theme.COLOR_TEXT).pack(anchor="w")
+            if ayuda:
+                tk.Label(f, text=ayuda, font=Theme.FONT_SMALL, bg=Theme.COLOR_PANEL,
+                         fg=Theme.COLOR_MUTED).pack(anchor="w")
+
+        def entrada(**kw):
+            e = tk.Entry(f, font=Theme.FONT_BASE, relief=tk.FLAT, width=60,
+                         bg=self.theme_manager.get_color('input_bg'), fg=Theme.COLOR_TEXT,
+                         insertbackground=Theme.COLOR_TEXT, highlightthickness=1,
+                         highlightbackground=self.theme_manager.get_color('border_strong'),
+                         highlightcolor=Theme.COLOR_PRIMARY, **kw)
+            e.pack(anchor="w", pady=(4, 14), ipady=6, ipadx=6)
+            return e
+
+        campo("Proveedor")
+        nombres = [n for n, _ in self.PROVEEDORES_IA]
+        actual = next((n for n, c in self.PROVEEDORES_IA if c == config.AI_PROVIDER), nombres[0])
+        self.var_ia_proveedor = tk.StringVar(value=actual)
+        combo = ttk.Combobox(f, textvariable=self.var_ia_proveedor, values=nombres,
+                             state="readonly", width=40, font=Theme.FONT_BASE)
+        combo.pack(anchor="w", pady=(4, 14))
+
+        campo("API key", "Se guarda solo en el archivo .env de esta computadora.")
+        self.entry_ia_key = entrada(show="•")
+        if config.AI_API_KEY:
+            self.entry_ia_key.insert(0, config.AI_API_KEY)
+
+        campo("Modelo", "Déjalo vacío para usar un modelo económico por defecto.")
+        self.entry_ia_modelo = entrada()
+        self.entry_ia_modelo.insert(0, config.AI_MODEL)
+
+        campo("URL base", "Solo para 'Otra API compatible' o si usas un servidor propio.")
+        self.entry_ia_url = entrada()
+        self.entry_ia_url.insert(0, config.AI_BASE_URL)
+
+        botones = tk.Frame(f, bg=Theme.COLOR_PANEL)
+        botones.pack(anchor="w", pady=(4, 0))
+        tk.Button(botones, text="Guardar", command=self.guardar_config_ia).pack(side=tk.LEFT, padx=(0, 8))
+        tk.Button(botones, text="Probar conexión", command=self.probar_config_ia).pack(side=tk.LEFT)
+
+        self.label_estado_ia = tk.Label(f, text="", font=Theme.FONT_LABEL,
+                                        bg=Theme.COLOR_PANEL, fg=Theme.COLOR_MUTED)
+        self.label_estado_ia.pack(anchor="w", pady=(12, 0))
+        from ai_provider import obtener_proveedor_ia
+        self.label_estado_ia.config(text=f"En uso: {obtener_proveedor_ia().descripcion}")
+
+    def _leer_config_ia(self):
+        codigo = dict(self.PROVEEDORES_IA).get(self.var_ia_proveedor.get(), "local")
+        return (codigo, self.entry_ia_key.get().strip(), self.entry_ia_modelo.get().strip(),
+                self.entry_ia_url.get().strip())
+
+    def guardar_config_ia(self):
+        import env_store
+        from ai_provider import aplicar_configuracion
+        codigo, key, modelo, url = self._leer_config_ia()
+        if codigo == "compatible" and not url:
+            self.label_estado_ia.config(text="Falta la URL base para una API compatible.",
+                                        fg=Theme.COLOR_DANGER)
+            return
+        try:
+            env_store.guardar({"AI_PROVIDER": codigo, "AI_API_KEY": key,
+                               "AI_MODEL": modelo, "AI_BASE_URL": url})
+        except OSError as e:
+            self.label_estado_ia.config(text=f"No se pudo guardar el archivo .env: {e}",
+                                        fg=Theme.COLOR_DANGER)
+            return
+        ia = aplicar_configuracion(codigo, key, modelo, url)
+        if codigo != "local" and not ia.activo:
+            texto, color = "Guardado, pero falta la API key: se seguirá usando el modo básico.", Theme.COLOR_WARNING_TEXT
+        else:
+            texto, color = f"Guardado. En uso: {ia.descripcion}", Theme.COLOR_SUCCESS
+        self.label_estado_ia.config(text=texto, fg=color)
+
+    def probar_config_ia(self):
+        from ai_provider import ErrorIA, ProveedorIA
+        codigo, key, modelo, url = self._leer_config_ia()
+        ia = ProveedorIA(codigo, key, modelo, url, timeout=20)
+        if not ia.activo:
+            self.label_estado_ia.config(text="Modo básico: no necesita conexión.", fg=Theme.COLOR_MUTED)
+            return
+        self.label_estado_ia.config(text="Probando…", fg=Theme.COLOR_MUTED)
+        self.root.update_idletasks()
+
+        def probar():
+            try:
+                ia.completar("Responde solo: OK", max_tokens=5)
+                resultado = (f"Conexión correcta con {ia.descripcion}.", Theme.COLOR_SUCCESS)
+            except ErrorIA as e:
+                resultado = (f"No se pudo conectar ({e}). Revisa la key y el modelo.", Theme.COLOR_DANGER)
+            self.root.after(0, lambda: self.label_estado_ia.config(text=resultado[0], fg=resultado[1]))
+
+        import threading
+        threading.Thread(target=probar, daemon=True).start()
 
     def guardar_configuracion(self):
         """Guarda la configuración de n8n"""
@@ -2150,15 +2135,15 @@ Salidas: {salidas}
 
         # Actualizar estado visual
         if url:
-            self.label_estado_webhook.config(text="🟢 Webhook: Configurado")
+            self.label_estado_webhook.config(text="Webhook: Configurado")
         else:
-            self.label_estado_webhook.config(text="🔴 Webhook: No configurado")
+            self.label_estado_webhook.config(text="Webhook: No configurado")
 
         self.label_estado_notif.config(
-            text=f"{'🟢' if notif_activas else '🔴'} Notificaciones: {'Activas' if notif_activas else 'Desactivadas'}"
+            text=f"{'●' if notif_activas else '●'} Notificaciones: {'Activas' if notif_activas else 'Desactivadas'}"
         )
 
-        messagebox.showinfo("Éxito", "✅ Configuración guardada correctamente")
+        messagebox.showinfo("Éxito", "Configuración guardada correctamente")
 
     def probar_webhook(self):
         """Prueba la conexión con el webhook de n8n"""
@@ -2181,30 +2166,30 @@ Salidas: {salidas}
 
             if response.status_code == 200:
                 messagebox.showinfo("Éxito",
-                                   "✅ Conexión exitosa con n8n!\n\n"
+                                   "Conexión exitosa con n8n!\n\n"
                                    "El webhook está funcionando correctamente.")
             else:
                 messagebox.showwarning("Advertencia",
-                                      f"⚠️ El servidor respondió con código {response.status_code}\n\n"
+                                      f"El servidor respondió con código {response.status_code}\n\n"
                                       f"Verifica tu configuración de n8n.")
         except requests.exceptions.Timeout:
             messagebox.showerror("Error",
-                               "❌ Timeout: El servidor no respondió a tiempo\n\n"
+                               "Timeout: El servidor no respondió a tiempo\n\n"
                                "Verifica que la URL sea correcta y que n8n esté corriendo.")
         except requests.exceptions.ConnectionError:
             messagebox.showerror("Error",
-                               "❌ Error de conexión\n\n"
+                               "Error de conexión\n\n"
                                "No se pudo conectar con el servidor.\n"
                                "Verifica la URL y que n8n esté accesible.")
         except Exception as e:
-            messagebox.showerror("Error", f"❌ Error inesperado:\n\n{str(e)}")
+            messagebox.showerror("Error", f"Error inesperado:\n\n{str(e)}")
 
     def abrir_guia_n8n(self):
         """Abre la guía de integración con n8n"""
         import os
         import sys
 
-        guia_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "INTEGRACION_N8N.md")
+        guia_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "docs", "N8N_IA.md")
 
         if os.path.exists(guia_path):
             try:
@@ -2214,11 +2199,11 @@ Salidas: {salidas}
                     os.system(f"open '{guia_path}'")
                 else:
                     os.system(f"xdg-open '{guia_path}'")
-                messagebox.showinfo("Guía", "📖 Abriendo guía de integración...")
+                messagebox.showinfo("Guía", "Abriendo guía de integración...")
             except Exception as e:
                 messagebox.showerror("Error", f"No se pudo abrir la guía:\n{str(e)}")
         else:
-            messagebox.showerror("Error", "No se encontró el archivo INTEGRACION_N8N.md")
+            messagebox.showerror("Error", "No se encontró el archivo docs/N8N_IA.md")
 
     # ==================== ALERTAS ====================
     def mostrar_alertas(self):
@@ -2236,13 +2221,13 @@ Salidas: {salidas}
     def actualizar_contador_alertas(self):
         """Actualiza el contador de alertas en el botón"""
         cantidad = self.alerta_model.contar_no_leidas()
-        self.btn_alertas.config(text=f"🔔 Alertas ({cantidad})")
-
-        # Cambiar color según cantidad de alertas
         if cantidad > 0:
-            self.btn_alertas.config(bg=Theme.COLOR_DANGER, fg="white")
+            texto = f"{cantidad} alerta" + ("s" if cantidad != 1 else "")
+            self.btn_alertas.config(text=texto)
+            self.btn_alertas.set_rol("alerta")
         else:
-            self.btn_alertas.config(bg=Theme.COLOR_WARNING, fg=Theme.COLOR_TEXT)
+            self.btn_alertas.config(text="Sin alertas")
+            self.btn_alertas.set_rol("secundario")
 
     def cerrar_aplicacion(self):
         """Cierra la aplicación correctamente"""
@@ -2275,7 +2260,7 @@ class DialogoMovimientoStock:
         self.producto_model = Producto()
 
         self.ventana = tk.Toplevel(parent)
-        titulo = "📥 Entrada de Stock" if tipo == "ENTRADA" else "📤 Salida de Stock"
+        titulo = "Entrada de Stock" if tipo == "ENTRADA" else "Salida de Stock"
         self.ventana.title(titulo)
         self.ventana.geometry("550x450")
         self.ventana.configure(bg=Theme.COLOR_BG)
@@ -2293,21 +2278,9 @@ class DialogoMovimientoStock:
         frame = tk.Frame(self.ventana, bg=Theme.COLOR_BG)
         frame.pack(fill=tk.BOTH, expand=True, padx=40, pady=40)
 
-        # Header con color según tipo
-        color_header = Theme.COLOR_SUCCESS if self.tipo == "ENTRADA" else Theme.COLOR_WARNING
-        header_frame = tk.Frame(frame, bg=color_header)
-        header_frame.pack(fill=tk.X, pady=(0, 25))
-
-        header_inner = tk.Frame(header_frame, bg=color_header)
-        header_inner.pack(fill=tk.X, padx=25, pady=20)
-
-        icono = "📥" if self.tipo == "ENTRADA" else "📤"
-        texto_tipo = "Entrada de Stock" if self.tipo == "ENTRADA" else "Salida de Stock"
-
-        tk.Label(header_inner, text=f"{icono} {texto_tipo}",
-                font=("Segoe UI Semibold", 16),
-                bg=color_header,
-                fg="white").pack()
+        texto_tipo = "Entrada de stock" if self.tipo == "ENTRADA" else "Salida de stock"
+        tk.Label(frame, text=texto_tipo, font=Theme.FONT_SUBTITLE, bg=Theme.COLOR_BG,
+                 fg=Theme.COLOR_TEXT).pack(anchor="w", pady=(0, 16))
 
         # Información del producto
         info_frame = tk.Frame(frame, bg=Theme.COLOR_PANEL)
@@ -2316,7 +2289,7 @@ class DialogoMovimientoStock:
         info_inner = tk.Frame(info_frame, bg=Theme.COLOR_PANEL)
         info_inner.pack(fill=tk.X, padx=25, pady=20)
 
-        tk.Label(info_inner, text="📦 Producto:",
+        tk.Label(info_inner, text="Producto:",
                 font=("Segoe UI Semibold", 11),
                 bg=Theme.COLOR_PANEL,
                 fg=Theme.COLOR_MUTED).pack(anchor=tk.W)
@@ -2371,7 +2344,7 @@ class DialogoMovimientoStock:
         botones_frame.pack()
 
         btn_guardar = tk.Button(botones_frame,
-                               text=f"✓ Registrar {texto_tipo}",
+                               text=f"Registrar {texto_tipo}",
                                command=self.guardar,
                                bg=Theme.COLOR_SUCCESS, fg="white",
                                font=("Segoe UI Semibold", 12),
@@ -2466,7 +2439,7 @@ class DialogoMovimientoStock:
                 nuevo_stock = self.stock_actual + cantidad if self.tipo == "ENTRADA" else self.stock_actual - cantidad
 
                 messagebox.showinfo("Éxito",
-                                  f"✅ {tipo_texto.capitalize()} registrada correctamente\n\n"
+                                  f"{tipo_texto.capitalize()} registrada correctamente\n\n"
                                   f"Cantidad: {cantidad} unidades\n"
                                   f"Stock anterior: {self.stock_actual}\n"
                                   f"Stock nuevo: {nuevo_stock}")
@@ -2592,7 +2565,7 @@ class FormularioProducto:
 
         # Separador visual
         tk.Label(frame, text="─" * 60, font=("Segoe UI", 8), bg=Theme.COLOR_BG, fg=Theme.SHADOW_COLOR).pack(pady=10)
-        tk.Label(frame, text="📅 Información de Fechas (Opcional)", font=("Segoe UI Semibold", 10),
+        tk.Label(frame, text="Información de Fechas (Opcional)", font=("Segoe UI Semibold", 10),
                 bg=Theme.COLOR_BG, fg=Theme.COLOR_PRIMARY).pack(anchor="w", pady=(0, 10))
 
         # Fecha de Ingreso
@@ -2627,7 +2600,7 @@ class FormularioProducto:
         frame_botones.pack(pady=10)
 
         btn_guardar = tk.Button(frame_botones,
-                               text="💾 Guardar" if self.producto_id is None else "✓ Actualizar",
+                               text="Guardar" if self.producto_id is None else "Actualizar",
                                command=self.guardar,
                                bg=Theme.COLOR_SUCCESS, fg="white",
                                font=("Segoe UI Semibold", 12),
@@ -2647,7 +2620,7 @@ class FormularioProducto:
         btn_guardar.bind("<Enter>", on_enter_guardar)
         btn_guardar.bind("<Leave>", on_leave_guardar)
 
-        btn_cancelar = tk.Button(frame_botones, text="✕ Cancelar",
+        btn_cancelar = tk.Button(frame_botones, text="Cancelar",
                                 command=self.ventana.destroy,
                                 bg="#8E8E93", fg="white",
                                 font=("Segoe UI Semibold", 12),
@@ -2744,7 +2717,7 @@ class FormularioProducto:
                                          precio_compra, precio_venta, stock_actual,
                                          stock_minimo, stock_maximo, proveedor_id,
                                          fecha_ingreso, fecha_vencimiento, dias_vida_util)
-                messagebox.showinfo("Éxito", "✅ Producto creado correctamente")
+                messagebox.showinfo("Éxito", "Producto creado correctamente")
             else:
                 # Actualizar producto existente
                 producto_anterior = self.producto_model.obtener_por_id(self.producto_id)
@@ -2769,7 +2742,7 @@ class FormularioProducto:
                             "Ajuste manual desde edición", "Usuario"
                         )
 
-                messagebox.showinfo("Éxito", "✅ Producto actualizado correctamente")
+                messagebox.showinfo("Éxito", "Producto actualizado correctamente")
 
             self.app.cargar_productos()
             self.app.cargar_dashboard()
@@ -2849,7 +2822,7 @@ class FormularioProveedor:
         frame_botones.pack(pady=10)
 
         btn_guardar = tk.Button(frame_botones,
-                               text="💾 Guardar" if self.proveedor_id is None else "✓ Actualizar",
+                               text="Guardar" if self.proveedor_id is None else "Actualizar",
                                command=self.guardar,
                                bg=Theme.COLOR_SUCCESS, fg="white",
                                font=("Segoe UI Semibold", 12),
@@ -2869,7 +2842,7 @@ class FormularioProveedor:
         btn_guardar.bind("<Enter>", on_enter_guardar)
         btn_guardar.bind("<Leave>", on_leave_guardar)
 
-        btn_cancelar = tk.Button(frame_botones, text="✕ Cancelar",
+        btn_cancelar = tk.Button(frame_botones, text="Cancelar",
                                 command=self.ventana.destroy,
                                 bg="#8E8E93", fg="white",
                                 font=("Segoe UI Semibold", 12),
@@ -2915,11 +2888,11 @@ class FormularioProveedor:
 
             if self.proveedor_id is None:
                 self.proveedor_model.crear(nombre, contacto, telefono, email, direccion)
-                messagebox.showinfo("Éxito", "✅ Proveedor creado correctamente")
+                messagebox.showinfo("Éxito", "Proveedor creado correctamente")
             else:
                 self.proveedor_model.actualizar(self.proveedor_id, nombre, contacto,
                                                telefono, email, direccion)
-                messagebox.showinfo("Éxito", "✅ Proveedor actualizado correctamente")
+                messagebox.showinfo("Éxito", "Proveedor actualizado correctamente")
 
             self.app.cargar_proveedores()
             self.app.cargar_dashboard()
@@ -2936,7 +2909,7 @@ class VentanaAnalisisIA:
         self.ai_assistant = AIAssistant()
 
         self.ventana = tk.Toplevel(parent)
-        self.ventana.title("🤖 Análisis Inteligente con IA")
+        self.ventana.title("Análisis Inteligente con IA")
         self.ventana.geometry("900x700")
         self.ventana.configure(bg=Theme.COLOR_BG)
 
@@ -2982,7 +2955,7 @@ class VentanaAnalisisIA:
         header_inner = tk.Frame(header_frame, bg=Theme.COLOR_PANEL)
         header_inner.pack(fill=tk.X, padx=30, pady=25)
 
-        tk.Label(header_inner, text="🤖 Análisis Inteligente con IA",
+        tk.Label(header_inner, text="Análisis Inteligente con IA",
                 font=("Segoe UI Semibold", 20),
                 bg=Theme.COLOR_PANEL,
                 fg=Theme.COLOR_TEXT).pack(anchor=tk.W)
@@ -2996,22 +2969,20 @@ class VentanaAnalisisIA:
         urgencia = self.analisis['sugerencia']['urgencia']
         colores_urgencia = {
             'CRÍTICA': Theme.COLOR_DANGER,
-            'ALTA': Theme.COLOR_WARNING,
-            'MEDIA': '#FFB341',  # Naranja
-            'BAJA': Theme.COLOR_SUCCESS
+            'ALTA': Theme.COLOR_WARNING_TEXT,
+            'MEDIA': Theme.COLOR_TEXT,
+            'BAJA': Theme.COLOR_SUCCESS,
         }
-
-        urgencia_frame = tk.Frame(frame_inner, bg=colores_urgencia[urgencia])
-        urgencia_frame.pack(fill=tk.X, pady=(0, 25))
-
-        urgencia_inner = tk.Frame(urgencia_frame, bg=colores_urgencia[urgencia])
-        urgencia_inner.pack(fill=tk.X, padx=30, pady=20)
-
-        emoji_urgencia = {'CRÍTICA': '🚨', 'ALTA': '⚠️', 'MEDIA': '📊', 'BAJA': '✅'}
-        tk.Label(urgencia_inner, text=f"{emoji_urgencia[urgencia]} URGENCIA: {urgencia}",
-                font=("Segoe UI Semibold", 16),
-                bg=colores_urgencia[urgencia],
-                fg="white").pack()
+        urgencia_frame = tk.Frame(frame_inner, bg=Theme.COLOR_PANEL, highlightthickness=1,
+                                  highlightbackground=Theme.COLOR_BORDER)
+        urgencia_frame.pack(fill=tk.X, pady=(0, 20))
+        tk.Label(urgencia_frame, text=f"Urgencia {urgencia.lower()}",
+                 font=Theme.FONT_SUBTITLE, bg=Theme.COLOR_PANEL,
+                 fg=colores_urgencia.get(urgencia, Theme.COLOR_TEXT)).pack(anchor="w", padx=20, pady=(14, 0))
+        tk.Label(urgencia_frame, text=("Calculado en esta PC (modo básico)" if self.analisis.get('motor', 'local') == 'local'
+                       else f"Analizado con {self.analisis['motor']}"),
+                 font=Theme.FONT_SMALL, bg=Theme.COLOR_PANEL,
+                 fg=Theme.COLOR_MUTED).pack(anchor="w", padx=20, pady=(0, 14))
 
         # === MÉTRICAS ===
         metricas_frame = tk.Frame(frame_inner, bg=Theme.COLOR_BG)
@@ -3051,7 +3022,7 @@ class VentanaAnalisisIA:
         razon_inner = tk.Frame(razon_frame, bg=Theme.COLOR_PANEL)
         razon_inner.pack(fill=tk.X, padx=30, pady=25)
 
-        tk.Label(razon_inner, text="💡 Análisis y Razonamiento",
+        tk.Label(razon_inner, text="Análisis y Razonamiento",
                 font=Theme.FONT_SUBTITLE,
                 bg=Theme.COLOR_PANEL,
                 fg=Theme.COLOR_TEXT).pack(anchor=tk.W, pady=(0, 15))
@@ -3064,41 +3035,41 @@ class VentanaAnalisisIA:
                 justify=tk.LEFT).pack(anchor=tk.W)
 
         # === SUGERENCIA ===
-        sugerencia_frame = tk.Frame(frame_inner, bg="#E3F2FD")
+        sugerencia_frame = tk.Frame(frame_inner, bg=Theme.COLOR_PRIMARY_SOFT)
         sugerencia_frame.pack(fill=tk.X, pady=(0, 25))
 
-        sugerencia_inner = tk.Frame(sugerencia_frame, bg="#E3F2FD")
+        sugerencia_inner = tk.Frame(sugerencia_frame, bg=Theme.COLOR_PRIMARY_SOFT)
         sugerencia_inner.pack(fill=tk.X, padx=30, pady=25)
 
-        tk.Label(sugerencia_inner, text="🎯 Recomendación de Pedido",
+        tk.Label(sugerencia_inner, text="Recomendación de Pedido",
                 font=Theme.FONT_SUBTITLE,
-                bg="#E3F2FD",
+                bg=Theme.COLOR_PRIMARY_SOFT,
                 fg=Theme.COLOR_TEXT).pack(anchor=tk.W, pady=(0, 10))
 
-        cantidad_frame = tk.Frame(sugerencia_inner, bg="#E3F2FD")
+        cantidad_frame = tk.Frame(sugerencia_inner, bg=Theme.COLOR_PRIMARY_SOFT)
         cantidad_frame.pack(anchor=tk.W)
 
         tk.Label(cantidad_frame, text="Cantidad sugerida:",
                 font=Theme.FONT_BASE,
-                bg="#E3F2FD",
+                bg=Theme.COLOR_PRIMARY_SOFT,
                 fg=Theme.COLOR_TEXT).pack(side=tk.LEFT)
 
         tk.Label(cantidad_frame, text=f" {self.analisis['sugerencia']['cantidad']} unidades",
                 font=("Segoe UI Semibold", 14),
-                bg="#E3F2FD",
+                bg=Theme.COLOR_PRIMARY_SOFT,
                 fg=Theme.COLOR_PRIMARY).pack(side=tk.LEFT)
 
-        costo_frame = tk.Frame(sugerencia_inner, bg="#E3F2FD")
+        costo_frame = tk.Frame(sugerencia_inner, bg=Theme.COLOR_PRIMARY_SOFT)
         costo_frame.pack(anchor=tk.W, pady=(5, 0))
 
         tk.Label(costo_frame, text="Costo estimado:",
                 font=Theme.FONT_BASE,
-                bg="#E3F2FD",
+                bg=Theme.COLOR_PRIMARY_SOFT,
                 fg=Theme.COLOR_TEXT).pack(side=tk.LEFT)
 
         tk.Label(costo_frame, text=f" ${self.analisis['sugerencia']['costo_estimado']:.2f}",
                 font=("Segoe UI Semibold", 14),
-                bg="#E3F2FD",
+                bg=Theme.COLOR_PRIMARY_SOFT,
                 fg=Theme.COLOR_SUCCESS).pack(side=tk.LEFT)
 
         # === PROVEEDOR ===
@@ -3109,7 +3080,7 @@ class VentanaAnalisisIA:
             prov_inner = tk.Frame(prov_frame, bg=Theme.COLOR_PANEL)
             prov_inner.pack(fill=tk.X, padx=30, pady=25)
 
-            tk.Label(prov_inner, text="🏢 Información del Proveedor",
+            tk.Label(prov_inner, text="Información del Proveedor",
                     font=Theme.FONT_SUBTITLE,
                     bg=Theme.COLOR_PANEL,
                     fg=Theme.COLOR_TEXT).pack(anchor=tk.W, pady=(0, 15))
@@ -3142,7 +3113,7 @@ class VentanaAnalisisIA:
             mensaje_inner = tk.Frame(mensaje_frame, bg=Theme.COLOR_PANEL)
             mensaje_inner.pack(fill=tk.X, padx=30, pady=25)
 
-            tk.Label(mensaje_inner, text="✉️ Mensaje Generado para el Proveedor",
+            tk.Label(mensaje_inner, text="Mensaje Generado para el Proveedor",
                     font=Theme.FONT_SUBTITLE,
                     bg=Theme.COLOR_PANEL,
                     fg=Theme.COLOR_TEXT).pack(anchor=tk.W, pady=(0, 15))
@@ -3150,7 +3121,7 @@ class VentanaAnalisisIA:
             # Text widget con scroll para el mensaje
             mensaje_text = tk.Text(mensaje_inner,
                                   font=("Consolas", 10),
-                                  bg="#F9F9FB",
+                                  bg=Theme.COLOR_SUBTLE,
                                   fg=Theme.COLOR_TEXT,
                                   relief=tk.FLAT,
                                   borderwidth=1,
@@ -3162,7 +3133,7 @@ class VentanaAnalisisIA:
             mensaje_text.insert("1.0", self.analisis['mensaje_proveedor'])
             mensaje_text.config(state=tk.DISABLED)
 
-            btn_copiar = tk.Button(mensaje_inner, text="📋 Copiar Mensaje",
+            btn_copiar = tk.Button(mensaje_inner, text="Copiar Mensaje",
                                    command=lambda: self.copiar_mensaje(self.analisis['mensaje_proveedor']),
                                    bg=Theme.COLOR_PRIMARY, fg="white",
                                    font=Theme.FONT_BUTTON,
@@ -3174,7 +3145,7 @@ class VentanaAnalisisIA:
         botones_frame = tk.Frame(frame_inner, bg=Theme.COLOR_BG)
         botones_frame.pack(fill=tk.X, pady=(10, 0))
 
-        btn_crear_pedido = tk.Button(botones_frame, text="✅ Crear Pedido Automático",
+        btn_crear_pedido = tk.Button(botones_frame, text="Crear Pedido Automático",
                                      command=self.crear_pedido,
                                      bg=Theme.COLOR_SUCCESS, fg="white",
                                      font=("Segoe UI Semibold", 12),
@@ -3194,7 +3165,7 @@ class VentanaAnalisisIA:
         """Copia el mensaje al portapapeles"""
         self.ventana.clipboard_clear()
         self.ventana.clipboard_append(mensaje)
-        messagebox.showinfo("Éxito", "✅ Mensaje copiado al portapapeles")
+        messagebox.showinfo("Éxito", "Mensaje copiado al portapapeles")
 
     def crear_pedido(self):
         """Crea un pedido automático con la cantidad sugerida"""
@@ -3215,7 +3186,7 @@ class VentanaAnalisisIA:
         )
 
         messagebox.showinfo("Éxito",
-                          f"✅ Pedido creado correctamente\n\n"
+                          f"Pedido creado correctamente\n\n"
                           f"ID del Pedido: {pedido_id}\n"
                           f"Cantidad: {cantidad} unidades\n"
                           f"Proveedor: {self.analisis['proveedor']['nombre']}")
@@ -3478,31 +3449,31 @@ class VentanaAnalisisProducto:
 
         # Recomendaciones basadas en stock
         if self.producto[7] <= self.producto[8]:
-            recomendaciones.append(("⚠️", "Stock bajo: Considere reabastecer", self.app.theme_manager.get_color('warning')))
+            recomendaciones.append(("●", "Stock bajo: Considere reabastecer", self.app.theme_manager.get_color('warning')))
 
         # Recomendaciones basadas en vencimiento
         dias_venc = self.producto_model.calcular_dias_hasta_vencimiento(self.producto)
         if dias_venc is not None:
             if dias_venc < 0:
-                recomendaciones.append(("❌", "Producto VENCIDO: Retirar del inventario", self.app.theme_manager.get_color('danger')))
+                recomendaciones.append(("●", "Producto VENCIDO: Retirar del inventario", self.app.theme_manager.get_color('danger')))
             elif dias_venc <= 7:
-                recomendaciones.append(("⏰", f"Vence en {dias_venc} días: Promocionar urgentemente", self.app.theme_manager.get_color('warning')))
+                recomendaciones.append(("●", f"Vence en {dias_venc} días: Promocionar urgentemente", self.app.theme_manager.get_color('warning')))
             elif dias_venc <= 30:
-                recomendaciones.append(("📅", f"Vence en {dias_venc} días: Monitorear de cerca", self.app.theme_manager.get_color('info')))
+                recomendaciones.append(("●", f"Vence en {dias_venc} días: Monitorear de cerca", self.app.theme_manager.get_color('info')))
 
         # Recomendaciones basadas en rotación
         analisis = self.producto_model.obtener_analisis_rotacion(self.producto_id, 30)
         if analisis:
             if analisis['dias_restantes'] < 7 and analisis['dias_restantes'] != 999:
-                recomendaciones.append(("🔴", f"Se agotará en ~{analisis['dias_restantes']:.1f} días", self.app.theme_manager.get_color('danger')))
+                recomendaciones.append(("●", f"Se agotará en ~{analisis['dias_restantes']:.1f} días", self.app.theme_manager.get_color('danger')))
 
             if analisis['promedio_diario'] >= 5:
-                recomendaciones.append(("✓", "Alta rotación: Producto popular", self.app.theme_manager.get_color('success')))
+                recomendaciones.append(("●", "Alta rotación: Producto popular", self.app.theme_manager.get_color('success')))
             elif analisis['promedio_diario'] < 0.5:
-                recomendaciones.append(("💤", "Baja rotación: Evaluar descontinuar", self.app.theme_manager.get_color('text_secondary')))
+                recomendaciones.append(("●", "Baja rotación: Evaluar descontinuar", self.app.theme_manager.get_color('text_secondary')))
 
         if not recomendaciones:
-            recomendaciones.append(("✓", "Producto en buen estado", self.app.theme_manager.get_color('success')))
+            recomendaciones.append(("●", "Producto en buen estado", self.app.theme_manager.get_color('success')))
 
         for icono, texto, color in recomendaciones:
             frame_row = tk.Frame(panel, bg=self.app.theme_manager.get_color('panel'))

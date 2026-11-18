@@ -48,17 +48,17 @@ class WebhookClient:
             )
 
             if response.status_code == 200:
-                print(f"[WEBHOOK] ✅ Enviado: {payload.get('evento', 'desconocido')}")
+                print(f"[WEBHOOK] Enviado: {payload.get('evento', 'desconocido')}")
                 return True
             else:
-                print(f"[WEBHOOK] ⚠️ Error {response.status_code}: {payload.get('evento')}")
+                print(f"[WEBHOOK] Error {response.status_code}: {payload.get('evento')}")
                 return False
 
         except requests.exceptions.Timeout:
-            print(f"[WEBHOOK] ⏱️ Timeout en: {payload.get('evento')}")
+            print(f"[WEBHOOK] Timeout en: {payload.get('evento')}")
             return False
         except Exception as e:
-            print(f"[WEBHOOK] ❌ Error: {str(e)}")
+            print(f"[WEBHOOK] Error: {str(e)}")
             return False
 
     # ==================== EVENTOS DE STOCK ====================
@@ -117,7 +117,7 @@ class WebhookClient:
                 'nombre': proveedor[1] if proveedor else None,
                 'telefono': proveedor[3] if proveedor else None,
             },
-            'mensaje': f"🚨 URGENTE: {producto[2]} está AGOTADO",
+            'mensaje': f"URGENTE: {producto[2]} está AGOTADO",
             'accion_recomendada': 'Crear pedido urgente o contactar proveedor inmediatamente'
         }
         return self._enviar_webhook(payload)
@@ -145,7 +145,7 @@ class WebhookClient:
                 'descuento_sugerido': '50%' if dias_restantes <= 7 else '30%' if dias_restantes <= 15 else '20%',
                 'tipo_promocion': '2x1' if dias_restantes <= 7 else 'Descuento'
             },
-            'mensaje': f"⏰ {producto[2]} vence en {dias_restantes} días - Stock: {producto[7]} unidades"
+            'mensaje': f"{producto[2]} vence en {dias_restantes} días - Stock: {producto[7]} unidades"
         }
         return self._enviar_webhook(payload)
 
@@ -162,7 +162,7 @@ class WebhookClient:
                 'stock_actual': producto[7],
                 'fecha_vencimiento': producto[14] if len(producto) > 14 else None,
             },
-            'mensaje': f"❌ CRÍTICO: {producto[2]} está VENCIDO - {producto[7]} unidades en stock",
+            'mensaje': f"CRÍTICO: {producto[2]} está VENCIDO - {producto[7]} unidades en stock",
             'accion_recomendada': 'Retirar del inventario inmediatamente y registrar pérdida'
         }
         return self._enviar_webhook(payload)
@@ -175,7 +175,7 @@ class WebhookClient:
             'evento': 'pedido_creado',
             'prioridad': 'MEDIA',
             'pedido': pedido_data,
-            'mensaje': f"📋 Nuevo pedido automático creado: {pedido_data.get('producto', 'Producto')}",
+            'mensaje': f"Nuevo pedido automático creado: {pedido_data.get('producto', 'Producto')}",
             'accion_recomendada': 'Revisar y confirmar con proveedor'
         }
         return self._enviar_webhook(payload)
@@ -187,7 +187,7 @@ class WebhookClient:
             'prioridad': 'INFO',
             'pedido_id': pedido_id,
             'producto': producto_nombre,
-            'mensaje': f"✓ Pedido procesado: {producto_nombre}"
+            'mensaje': f"Pedido procesado: {producto_nombre}"
         }
         return self._enviar_webhook(payload)
 
@@ -212,7 +212,7 @@ class WebhookClient:
             'evento': 'dia_alta_actividad',
             'prioridad': 'INFO',
             'actividad': actividad_datos,
-            'mensaje': f"📈 Actividad alta detectada: {actividad_datos.get('total_actividad', 0)} movimientos",
+            'mensaje': f"Actividad alta detectada: {actividad_datos.get('total_actividad', 0)} movimientos",
             'accion_recomendada': 'Revisar stock de productos más vendidos'
         }
         return self._enviar_webhook(payload)
@@ -224,7 +224,7 @@ class WebhookClient:
             'prioridad': 'MEDIA',
             'categoria': categoria,
             'analisis': analisis,
-            'mensaje': f"📉 Categoría {categoria} tiene bajo rendimiento",
+            'mensaje': f"Categoría {categoria} tiene bajo rendimiento",
             'accion_recomendada': 'Considerar promociones o reducir pedidos de esta categoría'
         }
         return self._enviar_webhook(payload)
@@ -241,7 +241,7 @@ class WebhookClient:
             'prioridad': 'ALTA' if any(s['urgencia'] == 'URGENTE' for s in sugerencias) else 'MEDIA',
             'sugerencias': sugerencias,
             'total_sugerencias': len(sugerencias),
-            'mensaje': f"💡 {len(sugerencias)} sugerencias de promoción disponibles",
+            'mensaje': f"{len(sugerencias)} sugerencias de promoción disponibles",
             'accion_recomendada': 'Revisar y crear campañas de promoción'
         }
         return self._enviar_webhook(payload)
@@ -264,7 +264,7 @@ class WebhookClient:
             'evento': 'backup_creado',
             'prioridad': 'INFO',
             'archivo': archivo_backup,
-            'mensaje': f"💾 Backup creado: {archivo_backup}"
+            'mensaje': f"Backup creado: {archivo_backup}"
         }
         return self._enviar_webhook(payload)
 
@@ -275,7 +275,7 @@ class WebhookClient:
             'prioridad': 'ALTA',
             'nivel': nivel,
             'descripcion': error_descripcion,
-            'mensaje': f"⚠️ Error detectado: {error_descripcion}"
+            'mensaje': f"Error detectado: {error_descripcion}"
         }
         return self._enviar_webhook(payload)
 
@@ -287,10 +287,10 @@ class WebhookClient:
         tipos: 'critico', 'advertencia', 'info', 'exito'
         """
         iconos = {
-            'critico': '🚨',
-            'advertencia': '⚠️',
+            'critico': '',
+            'advertencia': '',
             'info': 'ℹ️',
-            'exito': '✅'
+            'exito': ''
         }
 
         payload = {

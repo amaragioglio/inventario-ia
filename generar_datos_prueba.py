@@ -13,7 +13,10 @@ import io
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 # Conectar a la base de datos
-conn = sqlite3.connect('inventario.db')
+from config import DATABASE
+from database import Database
+Database(DATABASE)  # crea las tablas si la base es nueva
+conn = sqlite3.connect(DATABASE)
 cursor = conn.cursor()
 
 print("🗑️  Limpiando datos existentes...")
@@ -133,48 +136,56 @@ patrones_venta = {
 fecha_inicio = datetime.now() - timedelta(days=90)
 total_movimientos = 0
 
-# Generar movimientos día por día
+# Simulación con una política de reposición realista: se vende lo que hay y,
+# cuando el stock baja del mínimo, llega un pedido 2 días después. Unos pocos
+# productos dejan de reponerse al final para que la demo muestre alertas.
+random.seed(42)
+stock_sim = {p[0]: p[6] for p in productos}           # codigo -> stock
+pedido_llega = {}                                       # codigo -> día de llegada
+sin_reponer_al_final = {"BEB002", "ALI003", "LAC002", "SNK001", "LIM001"}
+
 for dia in range(90):
     fecha_actual = fecha_inicio + timedelta(days=dia)
-    fecha_str = fecha_actual.strftime("%Y-%m-%d %H:%M:%S")
 
-    # Para cada producto, generar salidas (ventas) según patrón
     for codigo, nombre, descripcion, categoria, precio_compra, precio_venta, stock, minimo, maximo, proveedor_nombre in productos:
         producto_id = producto_ids[codigo]
+        hora = fecha_actual.replace(hour=random.randint(8, 20), minute=random.randint(0, 59))
 
-        # Obtener patrón de venta para la categoría
+        # Llega un pedido pendiente
+        if pedido_llega.get(codigo) == dia:
+            entrada = max(int(maximo * 0.9) - stock_sim[codigo], 0)
+            if entrada:
+                stock_sim[codigo] += entrada
+                cursor.execute("""
+                    INSERT INTO movimientos (producto_id, tipo, cantidad, motivo, usuario, fecha)
+                    VALUES (?, 'ENTRADA', ?, 'Pedido a proveedor', 'Sistema', ?)
+                """, (producto_id, entrada, fecha_actual.replace(hour=7).strftime("%Y-%m-%d %H:%M:%S")))
+                total_movimientos += 1
+            del pedido_llega[codigo]
+
+        # Ventas del día (más los fines de semana), nunca más de lo que hay
         min_venta, max_venta = patrones_venta.get(categoria, (1, 5))
-
-        # 80% de días tiene ventas
         if random.random() < 0.8:
-            # Calcular ventas del día con variación
             ventas_dia = random.randint(min_venta, max_venta)
-
-            # Ajustar por día de semana (fines de semana venden más)
-            if fecha_actual.weekday() >= 5:  # Sábado o domingo
+            if fecha_actual.weekday() >= 5:
                 ventas_dia = int(ventas_dia * 1.5)
-
-            # Registrar SALIDA
+            ventas_dia = min(ventas_dia, stock_sim[codigo])
             if ventas_dia > 0:
+                stock_sim[codigo] -= ventas_dia
                 cursor.execute("""
                     INSERT INTO movimientos (producto_id, tipo, cantidad, motivo, usuario, fecha)
                     VALUES (?, 'SALIDA', ?, 'Venta del día', 'Sistema', ?)
-                """, (producto_id, ventas_dia, fecha_str))
+                """, (producto_id, ventas_dia, hora.strftime("%Y-%m-%d %H:%M:%S")))
                 total_movimientos += 1
 
-        # Cada 7-10 días, generar ENTRADA (reabastecimiento)
-        if dia > 0 and dia % random.randint(7, 10) == 0:
-            # Cantidad de reabastecimiento: entre 30% y 50% del máximo
-            entrada = random.randint(int(maximo * 0.3), int(maximo * 0.5))
+        # Reposición antes de llegar al mínimo
+        ultimos_dias = dia >= 80 and codigo in sin_reponer_al_final
+        punto_pedido = minimo + 3 * (min_venta + max_venta) // 2  # cubre los 2 días de espera
+        if stock_sim[codigo] <= punto_pedido and codigo not in pedido_llega and not ultimos_dias:
+            pedido_llega[codigo] = dia + 2
 
-            cursor.execute("""
-                INSERT INTO movimientos (producto_id, tipo, cantidad, motivo, usuario, fecha)
-                VALUES (?, 'ENTRADA', ?, 'Reabastecimiento programado', 'Sistema', ?)
-            """, (producto_id, entrada, fecha_str))
-            total_movimientos += 1
-
-    if (dia + 1) % 10 == 0:
-        print(f"  ⏳ Procesando día {dia + 1}/90...")
+    if (dia + 1) % 30 == 0:
+        print(f"  Procesando día {dia + 1}/90...")
 
 print(f"✅ {total_movimientos} movimientos generados")
 
@@ -210,38 +221,10 @@ for producto_id, proveedor_id, cantidad, notas in pedidos:
 
 print(f"✅ {len(pedidos)} pedidos automáticos creados")
 
-# Actualizar stock actual basado en los movimientos
-print("📦 Recalculando stock actual...")
-for codigo in producto_ids.keys():
-    producto_id = producto_ids[codigo]
-
-    # Sumar entradas
-    cursor.execute("""
-        SELECT COALESCE(SUM(cantidad), 0) FROM movimientos
-        WHERE producto_id = ? AND tipo = 'ENTRADA'
-    """, (producto_id,))
-    total_entradas = cursor.fetchone()[0]
-
-    # Sumar salidas
-    cursor.execute("""
-        SELECT COALESCE(SUM(cantidad), 0) FROM movimientos
-        WHERE producto_id = ? AND tipo = 'SALIDA'
-    """, (producto_id,))
-    total_salidas = cursor.fetchone()[0]
-
-    # Obtener stock inicial
-    cursor.execute("SELECT stock_actual FROM productos WHERE id = ?", (producto_id,))
-    stock_inicial = cursor.fetchone()[0]
-
-    # Calcular stock final
-    stock_final = stock_inicial + total_entradas - total_salidas
-    if stock_final < 0:
-        stock_final = 0
-
-    # Actualizar
-    cursor.execute("UPDATE productos SET stock_actual = ? WHERE id = ?", (stock_final, producto_id))
-
-print("✅ Stock actualizado")
+# Stock actual = resultado de la simulación
+print("Guardando stock final...")
+for codigo, producto_id in producto_ids.items():
+    cursor.execute("UPDATE productos SET stock_actual = ? WHERE id = ?", (stock_sim[codigo], producto_id))
 
 # Confirmar cambios
 conn.commit()

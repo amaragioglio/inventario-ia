@@ -13,7 +13,9 @@ import os
 class Integrador:
     """Maneja la importación y exportación de datos"""
 
-    def __init__(self, db_path="inventario.db"):
+    def __init__(self, db_path=None):
+        if db_path is None:
+            from config import DATABASE as db_path
         self.db_path = db_path
 
     # ==================== IMPORTACIÓN ====================

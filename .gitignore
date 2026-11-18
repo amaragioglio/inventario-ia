@@ -183,3 +183,12 @@ cython_debug/
 # Local inventory database and SQLite sidecar files
 /inventario.db
 /inventario.db-*
+# ---- Inventario ----
+# Tu base de datos tiene tus ventas y proveedores reales: nunca la subas.
+*.db
+*.db-journal
+# Preferencia de tema local
+theme_config.json
+# Exportaciones locales
+exportaciones/
+*.xlsx
